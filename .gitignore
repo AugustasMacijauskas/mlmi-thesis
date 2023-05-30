@@ -166,3 +166,4 @@ elk/
 logs/
 .ipynb_checkpoints/
 elk-reporters/
+outputs/
