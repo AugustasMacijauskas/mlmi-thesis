@@ -50,8 +50,6 @@ module load rhel8/default-amp              # REQUIRED - loads the basic environm
 export HF_HOME="/home/am3052/rds/hpc-work/.hf_cache"
 source /home/${USER}/.bashrc
 conda activate elk
-conda list | grep pandas
-python --version
 
 #! Full path to application executable:
 application="python"
