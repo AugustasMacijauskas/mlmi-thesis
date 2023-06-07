@@ -22,7 +22,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required? TODO: reduce for quicker scheduling
-#SBATCH --time=01:30:00
+#SBATCH --time=00:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -47,8 +47,7 @@ module purge                               # Removes all modules still loaded
 module load rhel8/default-amp              # REQUIRED - loads the basic environment
 #! Insert additional module load commands after this line if needed:
 # TODO: Update modules to load and python virtual env
-export HF_HOME="/home/am3052/rds/hpc-work/.hf_cache"
-export ELK_DIR="/home/am3052/rds/hpc-work/thesis/elk-reporters"
+export ELK_DIR="/home/am3052/rds/hpc-work/elk-reporters"
 source /home/${USER}/.bashrc
 conda activate elk
 
@@ -84,17 +83,17 @@ echo "Running on master node: `hostname`"
 echo "Current directory: `pwd`"
 
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="gpt_j_6b_rm"
+keyword="gpt2"
 save_path="logs/${keyword}_${now}_${JOBID}"
 mkdir $save_path
 
 #! Run options for the application:
-model="Dahoas/gptj-rm-static"
+model="gpt2"
 dataset="imdb"
 # options=$1
-# options="elicit EleutherAI/gpt-j-6b $dataset --out_dir=../elk-reporters/$keyword/$dataset"
-options="elicit $model $dataset"
-CMD="$application $options > ../$save_path/out.$JOBID"
+# options="elicit $model $dataset"
+options="elicit $model $dataset --max_examples 100 100 --layers 12"
+CMD="$application $options > ../elk-rlhf/$save_path/out.$JOBID"
 
 if [ "$SLURM_JOB_NODELIST" ]; then
         #! Create a machine file:
@@ -104,12 +103,12 @@ if [ "$SLURM_JOB_NODELIST" ]; then
         echo `cat $save_path/machine.file.$JOBID | sed -e 's/\..*$//g'`
 fi
 
-cd elk
+cd ../elk
 echo -e "\nnumtasks=$numtasks, numnodes=$numnodes, mpi_tasks_per_node=$mpi_tasks_per_node (OMP_NUM_THREADS=$OMP_NUM_THREADS)"
 echo -e "\nExecuting command:\n==================\n$CMD\n"
 eval $CMD
 
-cd ..
+cd ../elk-rlhf
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out $save_path
 

@@ -2,4 +2,4 @@
 
 sbatch scripts/slurm-submit-custom-elk
 
-squeue -u am3052
+squeue --me
