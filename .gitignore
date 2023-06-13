@@ -167,3 +167,4 @@ logs/
 .ipynb_checkpoints/
 elk-reporters/
 outputs/
+tensorboard/
