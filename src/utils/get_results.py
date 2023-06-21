@@ -40,7 +40,7 @@ def dict_to_markdown(outputs):
     ret = ""
     for metric, values in outputs.items():
         ret += f"# {metric}\n\n"
-        ret += "| lm_eval | eval | lr_eval |\n"
+        ret += "| eval | lr_eval | lm_eval |\n"
         ret += "| --- | --- | --- |\n"
         ret += "| "
 
@@ -53,14 +53,33 @@ def dict_to_markdown(outputs):
             if idx < len(values.values()) - 1:
                 ret += " | "
             else:
-                ret += " |\n"
+                ret += " |\n\n"
 
     ret += "\n"
+    ret += "# Accuracy\n\n"
+    ret += "| Layer | Ensembling | Value |\n"
+    ret += "| --- | --- | --- |\n"
+    for entry in outputs["Accuracy"]["eval"]:
+        formatted_value = f"{entry['value'] * 100:.2f}%"
+        ret += f"| {entry['layer']} | {entry['ensembling']} | {formatted_value} |\n"
+    
+    ret += "\n"
+    ret += "# Calibrated accuracy\n\n"
+    ret += "| Layer | Ensembling | Value |\n"
+    ret += "| --- | --- | --- |\n"
+    for entry in outputs["Calibrated accuracy"]["eval"]:
+        formatted_value = f"{entry['value'] * 100:.2f}%"
+        ret += f"| {entry['layer']} | {entry['ensembling']} | {formatted_value} |\n"
+
+    ret += "\n"
+    ret += "# -------------------------------------\n"
+
     for metric, values in outputs.items():
-        ret += f"# {metric}\n\n"
+        ret += "\n"
+        ret += f"# {metric}\n"
 
         for method, value in values.items():
-            ret += f"## {method}\n\n"
+            ret += f"\n## {method}\n\n"
             ret += "| Layer | Ensembling | Value |\n"
             ret += "| --- | --- | --- |\n"
             for entry in value:
@@ -84,6 +103,11 @@ def process_results(file_path):
         outputs[column_label] = new_entry
 
     outputs = dict_to_markdown(outputs)
+
+    identifier = file_path.name.split(".")[-1]
+    output_path = file_path.parent / f"results-{identifier}.md"
+    with open(output_path, "w") as file:
+        file.write(outputs)
     
     return outputs
 

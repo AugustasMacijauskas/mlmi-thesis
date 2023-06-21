@@ -25,7 +25,7 @@ echo "Running on master node: `hostname`"
 echo "Current directory: `pwd`"
 
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="unifiedqa_t5_3b_imdb"
+keyword="unifiedqa_t5_3b_test_printing_results"
 # keyword="unifiedqa_t5_3b_custom_data"
 # keyword="unifiedqa_t5_3b_custom_data_ag_news"
 # keyword="deberta_v3_large_ag_news"
@@ -46,14 +46,16 @@ dataset="imdb"
 # dataset="AugustasM/burns-datasets-VINC-ag_news"
 # template_path="AugustasM/burns-datasets-VINC/all"
 # options=$1
-# options="elicit $model $dataset --max_examples 100 100"
+options="elicit $model $dataset --num_gpus=1 --max_examples 100 100"
 # options="elicit $model $dataset --template_path=$template_path --num_gpus=1 --max_examples 10000 1000"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --net=ccs"
-options="elicit $model $dataset --num_gpus=1"
+# options="elicit $model $dataset --num_gpus=1"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
-CMD="$application $options > ../$save_path/out.$JOBID"
+
+out_file_path="../$save_path/out.$JOBID"
+CMD="$application $options > $out_file_path"
 
 #! Log the start time and execute the command
 start=`date +%s`
@@ -65,6 +67,9 @@ eval $CMD
 cd ../mlmi-thesis
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out ../$save_path
+
+#! Create a results file
+python src/utils/get_results.py --file_path=$out_file_path
 
 #! Log the duration
 end=`date +%s`
