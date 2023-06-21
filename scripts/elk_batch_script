@@ -25,9 +25,9 @@ echo "Running on master node: `hostname`"
 echo "Current directory: `pwd`"
 
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="unifiedqa_t5_3b_test_printing_results"
+# keyword="unifiedqa_t5_3b_rte_ccs"
 # keyword="unifiedqa_t5_3b_custom_data"
-# keyword="unifiedqa_t5_3b_custom_data_ag_news"
+keyword="unifiedqa_t5_3b_custom_data_ag_news_ccs_all"
 # keyword="deberta_v3_large_ag_news"
 # keyword="deberta_v3_large_custom_data"
 # keyword="deberta_v3_large_custom_data_ag_news"
@@ -38,20 +38,26 @@ cd $workdir
 
 #! Application and its run options:
 application="elk"
+
 # model="EleutherAI/gpt-j-6b"
 model="allenai/unifiedqa-t5-3b"
 # model="microsoft/deberta-v3-large"
-dataset="imdb"
+
+# dataset="super_glue:rte"
 # dataset="AugustasM/burns-datasets-VINC"
-# dataset="AugustasM/burns-datasets-VINC-ag_news"
-# template_path="AugustasM/burns-datasets-VINC/all"
+dataset="AugustasM/burns-datasets-VINC-ag_news"
+
+# template_path="AugustasM/burns-datasets-VINC/first"
+template_path="AugustasM/burns-datasets-VINC/all"
+
 # options=$1
-options="elicit $model $dataset --num_gpus=1 --max_examples 100 100"
+# options="elicit $model $dataset --num_gpus=1 --max_examples 100 100"
 # options="elicit $model $dataset --template_path=$template_path --num_gpus=1 --max_examples 10000 1000"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --net=ccs"
 # options="elicit $model $dataset --num_gpus=1"
+options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --net=ccs"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
 
 out_file_path="../$save_path/out.$JOBID"
