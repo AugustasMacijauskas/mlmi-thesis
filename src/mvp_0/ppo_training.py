@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 from accelerate import Accelerator
 from datasets import load_dataset
@@ -21,23 +23,23 @@ def main():
         python=True, conda=True, gpu=True,
         current_date=True, current_time=True,
     )
-    # print(info)
+    print(info)
 
     script_args = get_script_args()
 
     # PPO config
     config = get_ppo_config(script_args)
 
-    # Dataset for PPO training
-    train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/rl", split="train")
-    train_dataset = train_dataset.select(range(100000))
-    train_dataset = preprocess_dataset(train_dataset, tokenizer)
+    # # Dataset for PPO training
+    # train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/rl", split="train")
+    # train_dataset = train_dataset.select(range(100000))
+    # train_dataset = preprocess_dataset(train_dataset, tokenizer)
 
-    tokenizer = AutoTokenizer.from_pretrained(script_args.tokenizer_name)
-    # GPT-2 tokenizer has a pad token, but it is not eos_token by default. We need to set it to eos_token.
-    # only for this model.
-    if getattr(tokenizer, "pad_token", None) is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    # tokenizer = AutoTokenizer.from_pretrained(script_args.tokenizer_name)
+    # # GPT-2 tokenizer has a pad token, but it is not eos_token by default. We need to set it to eos_token.
+    # # only for this model.
+    # if getattr(tokenizer, "pad_token", None) is None:
+    #     tokenizer.pad_token = tokenizer.eos_token
     
 
     # set seed before initializing value head for deterministic eval
@@ -47,21 +49,31 @@ def main():
     current_device = Accelerator().local_process_index
 
     # Get the reward model
-    sentiment_pipe = get_reward_model(script_args, ppo_trainer, tokenizer, current_device)
+    # TODO: add these to config
+    # language_reward_model_name = "allenai/unifiedqa-v2-t5-11b-1363200"
+    # language_reward_model_name = "allenai/unifiedqa-v2-t5-3b-1363200"
+    language_reward_model_name = "allenai/unifiedqa-v2-t5-large-1363200"
+    reporter_dir = (
+        "/fsx/home-augustas/VINC-logs/"
+        "allenai/unifiedqa-v2-t5-3b-1363200/"
+        "AugustasM/burns-datasets-VINC/sad-carson"
+    )
+    reporter_dir = Path(reporter_dir)
+    layer = 18
+    reward_model = get_reward_model(
+        language_reward_model_name=language_reward_model_name,
+        reporter_dir=reporter_dir,
+        layer=layer, current_device=current_device,
+    )
+
+    return
 
     # Model
     model = get_model(config, current_device)
 
     # Optimizer
+    # TODO: consider whether adding Adafactor back in is a good idea
     optimizer = None
-    if script_args.adafactor:
-        optimizer = Adafactor(
-            filter(lambda p: p.requires_grad, model.parameters()),
-            scale_parameter=False,
-            relative_step=False,
-            warmup_init=False,
-            lr=config.learning_rate,
-        )
     
     # We then build the PPOTrainer, passing the model, the reference model, the tokenizer
     ppo_trainer = PPOTrainer(

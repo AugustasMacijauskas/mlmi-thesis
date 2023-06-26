@@ -27,7 +27,6 @@ class ScriptArguments:
     gradient_accumulation_steps: Optional[int] = field(
         default=4, metadata={"help": "the number of gradient accumulation steps"}
     )
-    adafactor: Optional[bool] = field(default=False, metadata={"help": "whether to use the adafactor optimizer"})
     early_stopping: Optional[bool] = field(default=False, metadata={"help": "whether to early stop"})
     target_kl: Optional[float] = field(default=0.1, metadata={"help": "kl target for early stopping"})
     reward_baseline: Optional[float] = field(
@@ -71,3 +70,12 @@ def get_ppo_config(script_args: ScriptArguments):
         init_kl_coef=script_args.init_kl_coef,
         adap_kl_ctrl=script_args.adap_kl_ctrl,
     )
+
+
+def main():
+    script_args = get_script_args()
+    print(script_args)
+
+
+if __name__ == "__main__":
+    main()

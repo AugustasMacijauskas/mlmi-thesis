@@ -40,8 +40,12 @@ def dict_to_markdown(outputs):
     ret = ""
     for metric, values in outputs.items():
         ret += f"# {metric}\n\n"
-        ret += "| eval | lr_eval | lm_eval |\n"
-        ret += "| --- | --- | --- |\n"
+        if "lm_eval" in values.keys():
+            ret += "| eval | lr_eval | lm_eval |\n"
+            ret += "| --- | --- | --- |\n"
+        else:
+            ret += "| eval | lr_eval |\n"
+            ret += "| --- | --- |\n"
         ret += "| "
 
         for idx, value in enumerate(values.values()):
@@ -97,11 +101,16 @@ def process_results(file_path):
     for column_name, column_label in COLUMNS_TO_EXTRACT_DICT.items():
         new_entry = {}
         for file_stem in RESULTS_TO_EXTRACT:
-            results = get_max_values_for_column(csv_file / f"{file_stem}.csv", column=column_name)
+            csv_file_path = csv_file / f"{file_stem}.csv"
+            if not csv_file_path.exists():
+                print(f"File {csv_file_path} does not exist. Skipping...")
+                continue
+
+            results = get_max_values_for_column(csv_file_path, column=column_name)
             new_entry[file_stem] = results
         
         outputs[column_label] = new_entry
-
+    
     outputs = dict_to_markdown(outputs)
 
     identifier = file_path.name.split(".")[-1]

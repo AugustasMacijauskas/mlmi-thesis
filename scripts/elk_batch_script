@@ -14,6 +14,7 @@ export ELK_DIR="/fsx/home-augustas/VINC-logs"
 source /admin/home-${USER}/.bashrc
 conda env list | grep "*"
 python --version
+nvidia-smi --query-gpu=gpu_name --format=csv,noheader | head -n 1
 
 workdir="$SLURM_SUBMIT_DIR"
 cd $workdir
@@ -27,10 +28,11 @@ echo "Current directory: `pwd`"
 now=$(date "+%Y%m%d_%H%M%S")
 # keyword="unifiedqa_t5_3b_rte_ccs"
 # keyword="unifiedqa_t5_3b_custom_data"
-# keyword="unifiedqa-v2-t5-large-1363200_custom_data_all"
-keyword="unifiedqa-v2-t5-11b-1363200_custom_data_all_encoder"
+# keyword="unifiedqa-v2-t5-large-1363200_custom_data_first_encoder"
+# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_all_encoder_ccs"
 # keyword="deberta_v3_large_ag_news"
-# keyword="deberta_v3_large_custom_data"
+# keyword="deberta_v3_large_custom_data_first"
+keyword="deberta-v2-xxlarge_custom_data_first"
 # keyword="deberta_v3_large_custom_data_ag_news"
 cd ..
 save_path="logs/${keyword}_${now}_${JOBID}"
@@ -43,26 +45,29 @@ application="elk"
 # model="EleutherAI/gpt-j-6b"
 # model="allenai/unifiedqa-t5-3b"
 # model="allenai/unifiedqa-v2-t5-large-1363200"
-model="allenai/unifiedqa-v2-t5-11b-1363200"
+# model="allenai/unifiedqa-v2-t5-11b-1363200"
 # model="microsoft/deberta-v3-large"
+model="microsoft/deberta-v2-xxlarge"
 
 # dataset="super_glue:rte"
 dataset="AugustasM/burns-datasets-VINC"
 # dataset="AugustasM/burns-datasets-VINC-ag_news"
 
-# template_path="AugustasM/burns-datasets-VINC/first"
-template_path="AugustasM/burns-datasets-VINC/all"
+template_path="AugustasM/burns-datasets-VINC/first"
+# template_path="AugustasM/burns-datasets-VINC/all"
 
 # options=$1
 # options="elicit $model $dataset --num_gpus=1 --max_examples 100 100"
 # options="elicit $model $dataset --template_path=$template_path --num_gpus=1 --max_examples 10000 1000"
-options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --net=ccs"
 # options="elicit $model $dataset --num_gpus=1"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --net=ccs"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --num_shots=1"
+# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --disable_cache"
+# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --net=ccs"
+# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states"
+# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states --net=ccs"
+options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
 
 out_file_path="../$save_path/out.$JOBID"
 CMD="$application $options > $out_file_path"
