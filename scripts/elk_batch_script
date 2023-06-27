@@ -34,7 +34,8 @@ now=$(date "+%Y%m%d_%H%M%S")
 # keyword="deberta_v3_large_custom_data_first"
 # keyword="deberta-v2-xxlarge_test"
 # keyword="deberta_v3_large_custom_data_ag_news"
-keyword="gpt-j-6b_truthful_qc_mc"
+# keyword="gpt-j-6b_truthful_qc_mc"
+keyword="gpt2_test"
 cd ..
 save_path="logs/${keyword}_${now}_${JOBID}"
 mkdir $save_path
@@ -43,21 +44,23 @@ cd $workdir
 # Application and its run options:
 application="elk"
 
-model="EleutherAI/gpt-j-6b"
+model="gpt2"
+# model="EleutherAI/gpt-j-6b"
 # model="allenai/unifiedqa-t5-3b"
 # model="allenai/unifiedqa-v2-t5-large-1363200"
 # model="allenai/unifiedqa-v2-t5-11b-1363200"
 # model="microsoft/deberta-v3-large"
 # model="microsoft/deberta-v2-xxlarge"
 
+dataset="imdb"
 # dataset="super_glue:rte"
 # dataset="AugustasM/burns-datasets-VINC"
-dataset="EleutherAI/truthful_qa_mc"
+# dataset="EleutherAI/truthful_qa_mc"
 # dataset="AugustasM/burns-datasets-VINC-ag_news"
 
 # template_path="AugustasM/burns-datasets-VINC/first"
 # template_path="AugustasM/burns-datasets-VINC/all"
-template_path="reaganjlee/truthful_qa_mc"
+# template_path="reaganjlee/truthful_qa_mc"
 
 # options=$1
 # options="elicit $model $dataset --num_gpus=1 --max_examples 100 100"
@@ -67,10 +70,11 @@ template_path="reaganjlee/truthful_qa_mc"
 # options="elicit $model $dataset --num_gpus=1"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --num_shots=1"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --disable_cache"
+options="elicit $model $dataset --num_gpus=1 --disable_cache"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states --net=ccs"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --net=ccs"
-options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
+# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
 
 out_file_path="../$save_path/out.$JOBID"
 CMD="$application $options > $out_file_path"
