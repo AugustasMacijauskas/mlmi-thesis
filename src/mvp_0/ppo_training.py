@@ -11,10 +11,11 @@ from trl.core import LengthSampler
 from watermark import watermark
 
 from configs import get_script_args, get_ppo_config
-from dataset import preprocess_dataset, collator
+from dataset import get_dataset, collator
 from reward_model import get_reward_model
 from model import get_model
 from trainer import train
+from utils import get_tokenizer
 
 
 def main():
@@ -25,51 +26,34 @@ def main():
     )
     print(info)
 
+    # Get script args
     script_args = get_script_args()
 
-    # PPO config
+    # Get PPO config
     config = get_ppo_config(script_args)
 
-    # # Dataset for PPO training
-    # train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/rl", split="train")
-    # train_dataset = train_dataset.select(range(100000))
-    # train_dataset = preprocess_dataset(train_dataset, tokenizer)
+    # Tokenizer
+    tokenizer = get_tokenizer(script_args.tokenizer_name)
 
-    # tokenizer = AutoTokenizer.from_pretrained(script_args.tokenizer_name)
-    # # GPT-2 tokenizer has a pad token, but it is not eos_token by default. We need to set it to eos_token.
-    # # only for this model.
-    # if getattr(tokenizer, "pad_token", None) is None:
-    #     tokenizer.pad_token = tokenizer.eos_token
-    
+    # Dataset for PPO training
+    train_dataset, prompt_max_len, response_max_len = get_dataset(
+        script_args.dataset_name, tokenizer,
+    )   
 
     # set seed before initializing value head for deterministic eval
     set_seed(config.seed)
 
     # Now let's build the model, the reference model, and the tokenizer.
     current_device = Accelerator().local_process_index
+    print(f"Current device: {current_device}\n")
 
     # Get the reward model
-    # TODO: add these to config
-    # language_reward_model_name = "allenai/unifiedqa-v2-t5-11b-1363200"
-    # language_reward_model_name = "allenai/unifiedqa-v2-t5-3b-1363200"
-    language_reward_model_name = "allenai/unifiedqa-v2-t5-large-1363200"
-    reporter_dir = (
-        "/fsx/home-augustas/VINC-logs/"
-        "allenai/unifiedqa-v2-t5-3b-1363200/"
-        "AugustasM/burns-datasets-VINC/sad-carson"
-    )
-    reporter_dir = Path(reporter_dir)
-    layer = 18
     reward_model = get_reward_model(
-        language_reward_model_name=language_reward_model_name,
-        reporter_dir=reporter_dir,
-        layer=layer, current_device=current_device,
+        script_args.reward_model_output_path, current_device,
     )
-
-    return
 
     # Model
-    model = get_model(config, current_device)
+    model = get_model(script_args.model_name, current_device)
 
     # Optimizer
     # TODO: consider whether adding Adafactor back in is a good idea
@@ -108,10 +92,12 @@ def main():
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": 100_000,
     }
-    output_min_length = 32
-    output_max_length = script_args.output_max_length
+    output_min_length = 1
+    # TODO: think about increasing this
+    output_max_length = response_max_len
     output_length_sampler = LengthSampler(output_min_length, output_max_length)
 
+    return
     train(ppo_trainer, sentiment_pipe, tokenizer, output_length_sampler, sent_kwargs, generation_kwargs, script_args, config)
 
 

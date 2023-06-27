@@ -1,17 +1,20 @@
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 import torch
 from torch import nn
 
-from transformers import AutoConfig, T5ForConditionalGeneration
+from transformers import T5ForConditionalGeneration
+
+from utils import get_model_loading_kwargs
 
 # Add local dependencies to PATH
 ELK_PATH = Path("/fsx/home-augustas/elk/")
 modules = [
     ELK_PATH,
     ELK_PATH / "elk" / "training",
-    ELK_PATH / "elk" / "promptsource",
 ]
 for module in modules:
     if not str(module) in sys.path:
@@ -69,51 +72,87 @@ class MyRewardModel(nn.Module):
         return pos_logits - neg_logits
 
 
-def get_reward_model(
-        language_reward_model_name,
-        reporter_dir, layer, current_device,
-    ):
-    print(f"The current device is {current_device}.")
+# Utility function to get the model name from the output path
+def get_model_name(output_path):
+    # Get the run id
+    run_id = output_path.name.split("_")[-1]
 
+    # Get the line with the model name from the slurm output file
+    with open(output_path / f"slurm-{run_id}.out", 'r') as file:
+        line_with_model_name = [l.strip() for l in file.readlines() if "elk elicit" in l][0]
+
+    # Extract the model name
+    return line_with_model_name.split(" ")[2]
+
+
+# Utility function to get the reporter path from the output path
+def get_reporter_path(output_path):
+    # Get the run id
+    run_id = output_path.name.split("_")[-1]
+
+    # Get the line with the elk logs from the output file
+    with open(output_path / f"out.{run_id}", 'r') as file:
+        vinc_logs_path = file.readlines()[-1].strip()
+    vinc_logs_path = Path(vinc_logs_path.split(" ")[-1][4:-4])
+
+    # Get the best layer
+    df = pd.read_csv(vinc_logs_path / "eval.csv")
+
+    max_value = df["acc_estimate"].max()
+    max_value_rows = df[df["acc_estimate"] == max_value]
+
+    results = []
+    for _, row in max_value_rows.iterrows():
+        entry = row[["layer", "ensembling"]].to_dict()
+        entry["value"] = row["acc_estimate"]
+        results.append(entry)
+
+    layer = results[-1]["layer"] # best layer
+
+    # The reporter path
+    reporter_path = vinc_logs_path / "reporters" / f"layer_{layer}.pt"
+
+    return reporter_path, layer
+
+
+def get_reward_model(output_path, current_device):
+    print(f"The current device is {current_device}.\n")
+
+    # Cast to Path
+    output_path = Path(output_path)
+
+    # Get the reward model name
+    language_reward_model_name = get_model_name(output_path)
+    print(f"Loading reward model from {language_reward_model_name}.")
     # Check the dtype to load in
-    model_cfg = AutoConfig.from_pretrained(language_reward_model_name)
-    fp32_weights = model_cfg.torch_dtype in (None, torch.float32)
-    is_bf16_possible = fp32_weights and torch.cuda.is_bf16_supported()
-    print(f"{is_bf16_possible=}")
-    kwargs = {
-        "torch_dtype": torch.bfloat16 if is_bf16_possible else torch.float32
-    }
+    kwargs = get_model_loading_kwargs(language_reward_model_name)
 
     # Load the language reward model
-    print(f"Loading reward model from {language_reward_model_name}.")
     model = T5ForConditionalGeneration.from_pretrained(
         language_reward_model_name, **kwargs
     ).to(current_device)
     model.eval();
     print(f"Loaded reward model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
-    print(f"Reward model dtype: {model.lm_head.weight.dtype}")
+    print(f"Reward model dtype: {model.lm_head.weight.dtype}\n")
 
+    # Get the reporter path
+    reporter_path, layer = get_reporter_path(output_path)
     # Load the reporter
-    reporter_path = reporter_dir / "reporters" / f"layer_{layer}.pt"
-    print(f"Loading reporter from {reporter_path}.")
+    print(f"Loading reporter from {reporter_path}")
     reporter = Reporter.load(reporter_path).to(current_device)
     reporter.eval()
-    print("Loaded reporter.")
+    print("Loaded reporter.\n")
 
     return MyRewardModel(model, reporter, layer=layer)
 
 
 def main():
-    reporter_dir = (
-        "/fsx/home-augustas/VINC-logs/"
-        "allenai/unifiedqa-v2-t5-3b-1363200/"
-        "AugustasM/burns-datasets-VINC/sad-carson"
+    output_path = (
+        "/fsx/home-augustas/logs_old/"
+        "unifiedqa-v2-t5-3b-1363200_custom_data_all_20230622_180051_15555"
     )
-    reporter_dir = Path(reporter_dir)
     reward_model = get_reward_model(
-        language_reward_model_name="allenai/unifiedqa-v2-t5-3b-1363200",
-        reporter_dir=reporter_dir,
-        layer=18, current_device="cuda:0",
+        output_path, current_device="cuda:0",
     )
 
 

@@ -162,10 +162,7 @@ cython_debug/
 # -------------------------------------------------------------------------------------------
 # Custom ignores
 # -------------------------------------------------------------------------------------------
-elk/
 logs/
+logs_old/
 .ipynb_checkpoints/
-elk-reporters/
-outputs/
-tensorboard/
 src/dataset_formation/datasets

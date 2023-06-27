@@ -16,11 +16,16 @@ class ScriptArguments:
     # models like gpt-neo* models are more suitable.
     model_name: Optional[str] = field(default="", metadata={"help": "the model name"})
     tokenizer_name: Optional[str] = field(default="", metadata={"help": "the tokenizer name"})
-    reward_model_name: Optional[str] = field(default="", metadata={"help": "the reward model name"})
+    
+    reward_model_output_path: Optional[str] = field(default="", metadata={"help": "the reward model name"})
+    reward_model_tokenizer_name: Optional[str] = field(default="", metadata={"help": "the reward model tokenizer name"})
+
     dataset_name: Optional[str] = field(default="", metadata={"help": "the dataset name"})
+    
     log_with: Optional[str] = field(default=None, metadata={"help": "use 'wandb' to log with wandb"})
+    logging_dir: Optional[str] = field(default=None, metadata={"help": "the logging directory"})
+    
     learning_rate: Optional[float] = field(default=1.41e-5, metadata={"help": "the learning rate"})
-    output_max_length: Optional[int] = field(default=128, metadata={"help": "maximum length for generation"})
     mini_batch_size: Optional[int] = field(default=1, metadata={"help": "the PPO minibatch size"})
     batch_size: Optional[int] = field(default=32, metadata={"help": "the batch size"})
     ppo_epochs: Optional[int] = field(default=4, metadata={"help": "the number of ppo epochs"})
@@ -33,7 +38,6 @@ class ScriptArguments:
         default=0.0,
         metadata={"help": "a baseline value that is subtracted from the reward"},
     )
-    batched_gen: Optional[bool] = field(default=False, metadata={"help": "whether to use the batched text gen"})
     save_freq: Optional[int] = field(default=None, metadata={"help": "n steps to save the model"})
     output_dir: Optional[str] = field(default="runs/", metadata={"help": "n steps to save the model"})
     seed: Optional[int] = field(default=0, metadata={"help": "the seed"})
