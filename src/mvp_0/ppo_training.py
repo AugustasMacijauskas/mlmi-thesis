@@ -1,14 +1,12 @@
 from pathlib import Path
 
-import torch
 from accelerate import Accelerator
-from datasets import load_dataset
-from transformers import Adafactor, AutoTokenizer
 
 from trl import set_seed, PPOTrainer
-from trl.core import LengthSampler
 
 from watermark import watermark
+
+from datetime import datetime
 
 from configs import get_script_args, get_ppo_config
 from dataset import get_dataset, collator
@@ -16,6 +14,20 @@ from reward_model import get_reward_model
 from model import get_model
 from trainer import train
 from utils import get_tokenizer
+
+import sys
+ELK_PATH = Path("/fsx/home-augustas/elk/")
+modules = [
+    ELK_PATH,
+    ELK_PATH / "elk" / "promptsource",
+]
+for module in modules:
+    if not str(module) in sys.path:
+        sys.path.insert(0, str(module.resolve()))
+
+print(sys.path[:2])
+
+from templates import DatasetTemplates
 
 
 def main():
@@ -28,17 +40,28 @@ def main():
 
     # Get script args
     script_args = get_script_args()
+    print(script_args)
 
     # Get PPO config
     config = get_ppo_config(script_args)
+    print(f"{config.total_ppo_epochs=}")
 
     # Tokenizer
     tokenizer = get_tokenizer(script_args.tokenizer_name)
 
     # Dataset for PPO training
     train_dataset, prompt_max_len, response_max_len = get_dataset(
-        script_args.dataset_name, tokenizer,
-    )   
+        script_args.dataset_name, tokenizer, subsets_to_delete=["piqa"]
+    )
+
+    # Dataset templates
+    dataset_template_path = "AugustasM/burns-datasets-VINC/first"
+    dataset_templates = DatasetTemplates(dataset_template_path)
+    dataset_templates.templates = {
+        x.name: x for x in dataset_templates.templates.values()
+    }
+    print(f"Num templates: {len(dataset_templates.templates)}")
+    template = list(dataset_templates.templates.values())[0]
 
     # set seed before initializing value head for deterministic eval
     set_seed(config.seed)
@@ -48,9 +71,10 @@ def main():
     print(f"Current device: {current_device}\n")
 
     # Get the reward model
-    reward_model = get_reward_model(
+    reward_model, reward_model_name = get_reward_model(
         script_args.reward_model_output_path, current_device,
     )
+    reward_model_tokenizer = get_tokenizer(reward_model_name)
 
     # Model
     model = get_model(script_args.model_name, current_device)
@@ -58,7 +82,7 @@ def main():
     # Optimizer
     # TODO: consider whether adding Adafactor back in is a good idea
     optimizer = None
-    
+
     # We then build the PPOTrainer, passing the model, the reference model, the tokenizer
     ppo_trainer = PPOTrainer(
         config,
@@ -71,34 +95,38 @@ def main():
     )
 
     # TODO: put this into config
-    # We then define the arguments to pass to the sentiment analysis pipeline.
-    # We set `return_all_scores` to True to get the sentiment score for each token.
-    sent_kwargs = {
-        "return_all_scores": True,
-        "function_to_apply": "none",
-        "batch_size": 16,
-        "truncation": True,
-    }
-
-    # TODO: put this into config
+    # TODO: check whether there are better settings for this
     # We then define the arguments to pass to the `generate` function. These arguments
     # are passed to the `generate` function of the PPOTrainer, which is a wrapper around
     # the `generate` function of the trained model.
     generation_kwargs = {
-        # "min_length": -1,
-        "top_k": 0.0,
+        "top_k": 0,
         "top_p": 1.0,
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
-        "eos_token_id": 100_000,
+        "eos_token_id": 100_000, # why is this value like this?
+        "pad_to_multiple_of": 8, # TODO: double-check, but this seems to work and to be faster
     }
-    output_min_length = 1
-    # TODO: think about increasing this
-    output_max_length = response_max_len
-    output_length_sampler = LengthSampler(output_min_length, output_max_length)
 
-    return
-    train(ppo_trainer, sentiment_pipe, tokenizer, output_length_sampler, sent_kwargs, generation_kwargs, script_args, config)
+    # Store starting time to get training duration in HH:MM:SS format later
+
+    start_time = datetime.now()
+    train(
+        ppo_trainer=ppo_trainer,
+        tokenizer=tokenizer,
+        generation_kwargs=generation_kwargs,
+        reward_model=reward_model,
+        reward_model_tokenizer=reward_model_tokenizer,
+        template=template,
+        script_args=script_args,
+        config=config,
+        device=current_device,
+    )
+    elapsed_time = datetime.now() - start_time
+    elapsed_time = datetime.utcfromtimestamp(
+        elapsed_time.total_seconds()
+    ).strftime("%H:%M:%S")
+    print(f"Duration: {elapsed_time}")
 
 
 if __name__ == "__main__":

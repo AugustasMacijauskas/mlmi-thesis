@@ -37,6 +37,6 @@ def get_model(model_name, current_device):
     )
 
     print(f"Loaded subject model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
-    print(f"Model dtype: {model.pretrained_model.lm_head.weight.dtype}\n")
+    print(f"Model dtype: {next(iter(model.parameters())).dtype}\n")
 
     return model

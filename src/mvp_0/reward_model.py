@@ -128,6 +128,7 @@ def get_reward_model(output_path, current_device):
     kwargs = get_model_loading_kwargs(language_reward_model_name)
 
     # Load the language reward model
+    # TODO: maybe make this more general to support other model classes
     model = T5ForConditionalGeneration.from_pretrained(
         language_reward_model_name, **kwargs
     ).to(current_device)
@@ -143,7 +144,7 @@ def get_reward_model(output_path, current_device):
     reporter.eval()
     print("Loaded reporter.\n")
 
-    return MyRewardModel(model, reporter, layer=layer)
+    return MyRewardModel(model, reporter, layer=layer), language_reward_model_name
 
 
 def main():

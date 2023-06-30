@@ -23,6 +23,11 @@ def get_tokenizer(model_str: str, **kwargs) -> PreTrainedTokenizerBase:
     if getattr(tokenizer, "pad_token", None) is None:
         tokenizer.pad_token = tokenizer.eos_token
     
+    # For some reason the original tokenizer has gibberish for the
+    # max length of the model, so we set it manually here
+    if "dolly-v2" in model_str:
+        tokenizer.model_max_length = 2048
+    
     print("Loaded tokenizer.\n")
 
     return tokenizer
@@ -30,8 +35,10 @@ def get_tokenizer(model_str: str, **kwargs) -> PreTrainedTokenizerBase:
 
 def get_model_loading_kwargs(model_name):
     model_cfg = AutoConfig.from_pretrained(model_name)
+
+    bf16_weights = model_cfg.torch_dtype == torch.bfloat16
     fp32_weights = model_cfg.torch_dtype in (None, torch.float32)
-    is_bf16_possible = fp32_weights and torch.cuda.is_bf16_supported()
+    is_bf16_possible = (bf16_weights or fp32_weights) and torch.cuda.is_bf16_supported()
     print(f"{is_bf16_possible=}")
     
     return {

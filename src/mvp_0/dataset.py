@@ -1,3 +1,5 @@
+import torch
+
 from datasets import load_dataset
 
 
@@ -49,41 +51,53 @@ def collator(data):
     return dict((key, [d[key] for d in data]) for key in data[0])
 
 
-def get_dataset(dataset_name, tokenizer, num_proc=12):
+def get_dataset(dataset_name, tokenizer, num_proc=12, subsets_to_delete=None):
     print("Loading dataset...\n")
 
-    dataset = load_dataset("AugustasM/burns-ppo-training-dataset", split="train")
+    dataset = load_dataset(dataset_name, split="train")
+    original_column_names = dataset.column_names # will be removed later
+    original_column_names.remove("prompt") # but want to keep the prompt
 
-    subsets_to_delete = ["piqa"]
-    for subset in subsets_to_delete:
-        print(f"Deleting subset: {subset}")
-        dataset = dataset.filter(lambda x: x["original_dataset"] != subset)
+    # Delete certain subsets if desired
+    if subsets_to_delete is not None:
+        for subset in subsets_to_delete:
+            print(f"Deleting subset: {subset}")
+            dataset = dataset.filter(lambda x: x["original_dataset"] != subset)
 
-    # Do not need to truncate for GPT-J 6B, check for other models
-    def tokenize(batch, max_length=1024):
-        return tokenizer(
-            batch["prompt"], padding="max_length",
-            max_length=max_length, return_tensors="pt",
-        )
-
+    # Get max prompt length
     prompt_max_len = max(
         tokenizer(row["prompt"], return_tensors="pt")["input_ids"].shape[1] for row in dataset
     )
     print(f"\nMax prompt length: {prompt_max_len}\n")
 
+    # Do not need to truncate for GPT-J 6B or dolly-v2
+    # check for other models
     processed_dataset = dataset.map(
-        tokenize, batched=True, num_proc=num_proc,
-        fn_kwargs={ "max_length": prompt_max_len }
+        lambda batch: tokenizer(batch["prompt"]), batched=True, num_proc=num_proc
     )
-    processed_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
-    # Assert that all rows in the dataset have the same length
-    assert len(set(row["input_ids"].shape[0] for row in processed_dataset)) == 1
+    # Add max response length
+    def add_max_response_len(row):
+        row["response_len"] = tokenizer(row["best_response"], return_tensors="pt")["input_ids"].shape[1]
+        return row
 
-    response_max_len = max(
-        tokenizer(row["best_response"], return_tensors="pt")["input_ids"].shape[1] for row in dataset
+    processed_dataset = processed_dataset.map(
+        add_max_response_len, batched=False, num_proc=num_proc
     )
-    print(f"Max response length: {response_max_len}")
+
+    response_max_len = max(processed_dataset["response_len"])
+    print(f"Max response length: {response_max_len}\n")
+
+    # Remove original columns
+    processed_dataset = processed_dataset.remove_columns(original_column_names)
+    print(f"Remaining columns: {processed_dataset.column_names}\n")
+
+    # Set format
+    processed_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"], output_all_columns=True)
+
+    print(f"Total number of examples: {len(processed_dataset)}\n")
+    
+    print("Processing finished.\n")
 
     return processed_dataset, prompt_max_len, response_max_len
 
