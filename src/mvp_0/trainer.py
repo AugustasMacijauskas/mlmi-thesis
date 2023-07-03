@@ -90,35 +90,42 @@ def train(
     script_args, config,
     device,
 ):
-    for epoch, batch in tqdm(enumerate(ppo_trainer.dataloader)):
-        # TODO: what is this for? -> Probably handles gradient accumulation
-        if epoch >= config.total_ppo_epochs:
-            break
+    print(f"Dataloader length: {len(ppo_trainer.dataloader)}")
 
-        question_tensors = batch["input_ids"]
+    n_epochs = config.steps // len(ppo_trainer.dataloader)
+    print(f"Number of epochs: {n_epochs}")
 
-        max_new_tokens = max(batch["response_len"])
-        max_new_tokens = max(4, max_new_tokens)
-        generation_kwargs["max_new_tokens"] = max_new_tokens
+    for epoch in range(1, n_epochs+1):
+        print(f"Epoch: {epoch}")
 
-        response_tensors = ppo_trainer.generate(
-            question_tensors,
-            return_prompt=False,
-            # length_sampler=output_length_sampler, # TODO: can be none
-            batch_size=4, # TODO: generations are made in batches
-            **generation_kwargs,
-        )
-        batch["response"] = tokenizer.batch_decode(response_tensors, skip_special_tokens=True)
+        loop = tqdm(enumerate(ppo_trainer.dataloader), total=len(ppo_trainer.dataloader), leave=False)
+        for batch_idx, batch in loop:
 
-        # Compute sentiment score
-        texts = [q + r for q, r in zip(batch["prompt"], batch["response"])]
-        rewards = get_rewards(texts, reward_model, reward_model_tokenizer, template, device)
-        rewards -= script_args.reward_baseline
-        rewards = [x for x in rewards]
+            question_tensors = batch["input_ids"]
 
-        # Run PPO step
-        stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
-        ppo_trainer.log_stats(stats, batch, rewards)
+            max_new_tokens = max(batch["response_len"])
+            max_new_tokens = max(4, max_new_tokens)
+            generation_kwargs["max_new_tokens"] = max_new_tokens
 
-        if script_args.save_freq and epoch and epoch % script_args.save_freq == 0:
+            response_tensors = ppo_trainer.generate(
+                question_tensors,
+                return_prompt=False,
+                # length_sampler=output_length_sampler, # TODO: can be none
+                batch_size=4, # TODO: generations are made in batches
+                **generation_kwargs,
+            )
+            batch["response"] = tokenizer.batch_decode(response_tensors, skip_special_tokens=True)
+
+            # Compute sentiment score
+            texts = [q + r for q, r in zip(batch["prompt"], batch["response"])]
+            rewards = get_rewards(texts, reward_model, reward_model_tokenizer, template, device)
+            rewards -= script_args.reward_baseline
+            rewards = [x for x in rewards]
+
+            # Run PPO step
+            stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
+            ppo_trainer.log_stats(stats, batch, rewards)
+
+        # Save at the end of epoch
+        if script_args.save_freq and epoch and batch_idx % script_args.save_freq == 0:
             ppo_trainer.save_pretrained(script_args.output_dir + f"step_{epoch}")

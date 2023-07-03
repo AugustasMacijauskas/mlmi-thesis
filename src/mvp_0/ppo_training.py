@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import datasets
+
 from accelerate import Accelerator
 
 from trl import set_seed, PPOTrainer
@@ -31,6 +33,9 @@ from templates import DatasetTemplates
 
 
 def main():
+    # Don't show progress datasets bars
+    datasets.disable_progress_bar()
+
     info = watermark(
         packages="torch,transformers,datasets,peft,trl,tensorboard,accelerate",
         python=True, conda=True, gpu=True,
@@ -68,7 +73,7 @@ def main():
 
     # Now let's build the model, the reference model, and the tokenizer.
     current_device = Accelerator().local_process_index
-    print(f"Current device: {current_device}\n")
+    # print(f"Current device: {current_device}\n")
 
     # Get the reward model
     reward_model, reward_model_name = get_reward_model(

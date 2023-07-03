@@ -31,7 +31,7 @@ class ScriptArguments:
     gradient_accumulation_steps: Optional[int] = field(
         default=4, metadata={"help": "the number of gradient accumulation steps"}
     )
-    steps: Optional[int] = field(default=20000, metadata={"help": "number of epochs"})
+    steps: Optional[int] = field(default=5000, metadata={"help": "number of steps"})
     ppo_epochs: Optional[int] = field(default=4, metadata={"help": "the number of ppo epochs"})
     early_stopping: Optional[bool] = field(default=False, metadata={"help": "whether to early stop"})
     

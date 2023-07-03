@@ -26,7 +26,7 @@ def get_model_with_lora(config, current_device):
 
 
 def get_model(model_name, current_device):
-    print("Loading subject model...\n")
+    print("Loading policy model...\n")
 
     kwargs = get_model_loading_kwargs(model_name)
     model = AutoModelForCausalLMWithValueHead.from_pretrained(

@@ -33,7 +33,7 @@ now=$(date "+%Y%m%d_%H%M%S")
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v3_first_more_data_ccs"
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v3_all_more_data_ccs"
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v4_all"
-keyword="unifiedqa-v2-t5-11b-1363200_custom_data_all_more_data"
+# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_all_more_data"
 # keyword="unifiedqa-v2-t5-11b-1363200_custom_data_v2_all_ccs"
 # keyword="unifiedqa-v2-t5-11b-1363200_custom_data_v3_all_ccs"
 # keyword="unifiedqa-v2-t5-11b-1363200_custom_data_v4_all"
@@ -47,6 +47,8 @@ keyword="unifiedqa-v2-t5-11b-1363200_custom_data_all_more_data"
 # keyword="dolly-v2-3b_custom_data_v2_all"
 # keyword="dolly-v2-3b_custom_data_v3_all"
 # keyword="dolly-v2-3b_truthful_qc_mc"
+keyword="gpt2_custom_data_v4_all"
+# keyword="gpt2-xl_custom_data_v4_all"
 cd ..
 save_path="logs/${keyword}_${now}_${JOBID}"
 mkdir $save_path
@@ -55,22 +57,26 @@ cd $workdir
 # Application and its run options:
 application="elk"
 
-# model="gpt2"
+# ----------------------------------------
+# Model
+# ----------------------------------------
+model="gpt2"
+# model="gpt2-xl"
 # model="EleutherAI/gpt-j-6b"
 # model="databricks/dolly-v2-3b"
 # model="allenai/unifiedqa-t5-3b"
 # model="allenai/unifiedqa-v2-t5-large-1363200"
 # model="allenai/unifiedqa-v2-t5-3b-1363200"
-model="allenai/unifiedqa-v2-t5-11b-1363200"
+# model="allenai/unifiedqa-v2-t5-11b-1363200"
 # model="microsoft/deberta-v3-large"
 # model="microsoft/deberta-v2-xxlarge"
 
 # dataset="imdb"
 # dataset="super_glue:rte"
-dataset="AugustasM/burns-datasets-VINC"
+# dataset="AugustasM/burns-datasets-VINC"
 # dataset="AugustasM/burns-datasets-VINC-v2"
 # dataset="AugustasM/burns-datasets-VINC-v3"
-# dataset="AugustasM/burns-datasets-VINC-v4"
+dataset="AugustasM/burns-datasets-VINC-v4"
 # dataset="EleutherAI/truthful_qa_mc"
 # dataset="truthful_qa_mc"
 # dataset="AugustasM/burns-datasets-VINC-ag_news"
@@ -79,6 +85,8 @@ dataset="AugustasM/burns-datasets-VINC"
 # template_path="AugustasM/burns-datasets-VINC/first"
 template_path="AugustasM/burns-datasets-VINC/all"
 # template_path="reaganjlee/truthful_qa_mc"
+
+# reporter_path="databricks/dolly-v2-3b/AugustasM/burns-datasets-VINC/reverent-yalow"
 
 # options=$1
 # options="elicit $model $dataset --num_gpus=1 --max_examples 100 100"
@@ -91,10 +99,10 @@ template_path="AugustasM/burns-datasets-VINC/all"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states --net=ccs"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --net=ccs"
-options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --max_examples 10000 3000"
+options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --max_examples 1000 2000"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --max_examples 10000 2000"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
-# options="eval $model $dataset --num_gpus=1"
+# options="eval $reporter_path $model $dataset --num_gpus=1 --template_path=$template_path"
 
 out_file_path="../$save_path/out.$JOBID"
 CMD="$application $options > $out_file_path"
