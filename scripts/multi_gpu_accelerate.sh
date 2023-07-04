@@ -6,7 +6,7 @@
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
 #SBATCH -J augustas-thesis
-#SBATCH --time=03:30:00
+#SBATCH --time=06:00:00
 #SBATCH --mail-type=NONE
 
 #! My own code
@@ -36,9 +36,14 @@ cd $workdir
 # Application and its run options:
 application="accelerate"
 
+# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_v4_all_20230629_120158_21789"
 reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_v4_all_20230629_120158_21789"
+# dataset="AugustasM/burns-datasets-VINC-ppo-training-v3"
 dataset="AugustasM/burns-datasets-VINC-ppo-training-v4"
 num_gpus=8
+
+echo "Reward model output path: $reward_model_output_path"
+echo "Dataset: $dataset"
 
 options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus --mixed_precision=no --dynamo_backend=no src/mvp_0/ppo_training.py \
     --model_name=$model \
@@ -48,11 +53,11 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus --mixed_p
     --remove_unused_columns=False \
     --log_with=tensorboard \
     --logging_dir=/fsx/home-augustas/ppo_tensorboard_logs/$save_path_stem/ \
-    --learning_rate=1.4e-5 \
+    --learning_rate=5e-6 \
     --batch_size=32 \
     --mini_batch_size=1 \
     --gradient_accumulation_steps=1 \
-    --steps=132 \
+    --steps=198 \
     --ppo_epochs=4 \
     --early_stopping=True \
     --reward_baseline=0.0 \

@@ -127,5 +127,5 @@ def train(
             ppo_trainer.log_stats(stats, batch, rewards)
 
         # Save at the end of epoch
-        if script_args.save_freq and epoch and batch_idx % script_args.save_freq == 0:
+        if script_args.save_freq and epoch and epoch % script_args.save_freq == 0:
             ppo_trainer.save_pretrained(script_args.output_dir + f"step_{epoch}")
