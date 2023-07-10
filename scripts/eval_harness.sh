@@ -9,12 +9,13 @@
 #SBATCH --time=02:30:00
 #SBATCH --mail-type=NONE
 
-#! My own code
-export ELK_DIR="/fsx/home-augustas/VINC-logs"
-source /admin/home-${USER}/.bashrc
+# My own code
+cuda_devices=$(echo $CUDA_VISIBLE_DEVICES)  # Store the value of CUDA_VISIBLE_DEVICES in a variable
+echo "CUDA_VISIBLE_DEVICES: $cuda_devices"
+nvidia-smi --query-gpu=gpu_name --format=csv,noheader | head -n 1
+
 conda env list | grep "*"
 python --version
-nvidia-smi --query-gpu=gpu_name --format=csv,noheader | head -n 1
 
 workdir="$SLURM_SUBMIT_DIR"
 cd $workdir

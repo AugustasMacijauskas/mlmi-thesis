@@ -22,12 +22,14 @@ class ScriptArguments:
     dataset_name: Optional[str] = field(default="", metadata={"help": "the dataset name"})
     remove_unused_columns: Optional[bool] = field(default=True, metadata={"help": "whether to remove unused columns"})
     
-    log_with: Optional[str] = field(default=None, metadata={"help": "use 'wandb' to log with wandb"})
-    logging_dir: Optional[str] = field(default=None, metadata={"help": "the logging directory"})
+    log_with: Optional[str] = field(default=None, metadata={"help": "use 'wandb'/'tensorboard'"})
+    logging_dir: Optional[str] = field(default=None, metadata={"help": "the logging directory used if 'log_with' is set to 'ensorboard'"})
     
     learning_rate: Optional[float] = field(default=1.4e-5, metadata={"help": "the learning rate"})
     batch_size: Optional[int] = field(default=32, metadata={"help": "the batch size"})
-    mini_batch_size: Optional[int] = field(default=1, metadata={"help": "the PPO minibatch size"})
+    rm_batch_size: Optional[int] = field(default=32, metadata={"help": "the reward model batch size"})
+    generator_batch_size: Optional[int] = field(default=4, metadata={"help": "the generator model batch size"})
+    ppo_batch_size: Optional[int] = field(default=1, metadata={"help": "the PPO minibatch size"})
     gradient_accumulation_steps: Optional[int] = field(
         default=4, metadata={"help": "the number of gradient accumulation steps"}
     )
@@ -66,7 +68,7 @@ def get_ppo_config(script_args: ScriptArguments):
         log_with=script_args.log_with,
         learning_rate=script_args.learning_rate,
         batch_size=script_args.batch_size,
-        mini_batch_size=script_args.mini_batch_size,
+        mini_batch_size=script_args.ppo_batch_size,
         gradient_accumulation_steps=script_args.gradient_accumulation_steps,
         steps=script_args.steps,
         ppo_epochs=script_args.ppo_epochs,

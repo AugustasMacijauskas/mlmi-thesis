@@ -92,6 +92,9 @@ def get_dataset(dataset_name, tokenizer, num_proc=12, subsets_to_delete=None):
     processed_dataset = processed_dataset.remove_columns(original_column_names)
     print(f"Remaining columns: {processed_dataset.column_names}\n")
 
+    # Sample first n examples
+    processed_dataset = processed_dataset.select(range(8192))
+
     # Set format
     processed_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"], output_all_columns=True)
 

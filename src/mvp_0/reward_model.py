@@ -6,6 +6,8 @@ import pandas as pd
 import torch
 from torch import nn
 
+from datasets import Dataset
+
 from transformers import T5ForConditionalGeneration
 
 from utils import get_model_loading_kwargs
@@ -132,8 +134,10 @@ def get_reward_model(output_path, current_device):
     model = T5ForConditionalGeneration.from_pretrained(
         language_reward_model_name, **kwargs
     ).to(current_device)
-    model.eval();
+    model.eval()
+    model.requires_grad_(False)
     print(f"Loaded reward model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
+    print(f"Number of trainable params {sum(p.numel() for p in model.parameters() if p.requires_grad):,d} parameters.")
     print(f"Reward model dtype: {model.lm_head.weight.dtype}\n")
 
     # Get the reporter path
@@ -145,6 +149,90 @@ def get_reward_model(output_path, current_device):
     print("Loaded reporter.\n")
 
     return MyRewardModel(model, reporter, layer=layer), language_reward_model_name
+
+
+# Idea borrowed from: https://github.com/CarperAI/trlx/blob/main/examples/hh/ppo_hh.py
+def create_reward_fn(
+    reward_model, reward_model_tokenizer,
+    rm_batch_size,
+    template, device,
+):
+    def tokenization_function(q, a):
+        return reward_model_tokenizer(
+            q, text_target=a.strip(),
+            add_special_tokens=True, return_tensors="pt",
+        )
+    
+    def preprocess_function(text):
+        entry = { "text": text }
+
+        # Get the positive and negative examples
+        entry["label"] = 1
+        pos_q, pos_a = template.apply(entry)
+
+        entry["label"] = 0
+        neg_q, neg_a = template.apply(entry)
+
+        # Tokenize the inputs
+        pos_inputs = tokenization_function(pos_q, pos_a)
+        neg_inputs = tokenization_function(neg_q, neg_a)
+
+        return {
+            "pos_input_ids": pos_inputs["input_ids"].squeeze(),
+            "pos_attention_mask": pos_inputs["attention_mask"].squeeze(),
+            "pos_labels": pos_inputs["labels"].squeeze(),
+            "neg_input_ids": neg_inputs["input_ids"].squeeze(),
+            "neg_attention_mask": neg_inputs["attention_mask"].squeeze(),
+            "neg_labels": neg_inputs["labels"].squeeze(),
+        }
+
+    
+    def get_rewards(texts):
+        '''
+            args:
+                texts: list of strings - the prompts concatenated with the generations
+        '''
+
+        text_dataset = Dataset.from_dict({ "text": texts })
+
+        processed_dataset = text_dataset.map(
+            preprocess_function, batched=False,
+            remove_columns=text_dataset.column_names,
+        )
+
+        # Get max length
+        max_length = max([len(item) for item in processed_dataset["pos_input_ids"]])
+
+        # Pad pos features
+        features_to_pad = {
+            "input_ids": processed_dataset["pos_input_ids"],
+            "attention_mask": processed_dataset["pos_attention_mask"],
+        }
+        pos_inputs = reward_model_tokenizer.pad(
+            features_to_pad, padding="longest", return_tensors="pt",
+        ).to(device)
+        assert all([item.shape[1] == max_length for item in pos_inputs.values()])
+        pos_inputs["labels"] = torch.LongTensor(processed_dataset["pos_labels"]).to(device)
+
+        # Pad neg features
+        features_to_pad = {
+            "input_ids": processed_dataset["neg_input_ids"],
+            "attention_mask": processed_dataset["neg_attention_mask"],
+        }
+        neg_inputs = reward_model_tokenizer.pad(
+            features_to_pad, padding="longest", return_tensors="pt",
+        ).to(device)
+        assert all([item.shape[1] == max_length for item in neg_inputs.values()])
+        neg_inputs["labels"] = torch.LongTensor(processed_dataset["neg_labels"]).to(device)
+
+        # Run model
+        # Add batching later if needed
+        with torch.no_grad():
+            predictions = reward_model(pos_inputs, neg_inputs)
+
+        return predictions.sigmoid()
+    
+    return get_rewards
 
 
 def main():

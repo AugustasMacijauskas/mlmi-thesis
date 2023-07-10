@@ -1,3 +1,9 @@
+import os
+
+rank = os.environ.get("RANK", "0") 
+print(f"{rank=}")
+print(rank == "0")
+
 from pathlib import Path
 
 import datasets
@@ -76,19 +82,25 @@ def main():
     # print(f"Current device: {current_device}\n")
 
     # Get the reward model
-    reward_model, reward_model_name = get_reward_model(
-        script_args.reward_model_output_path, current_device,
-    )
-    reward_model_tokenizer = get_tokenizer(reward_model_name)
+    # Approach: only the process with rank 0 loads the reward model,
+    # but later it is moved to only the last process.
+    if os.environ.get("RANK", "0") == "0":
+        reward_model, reward_model_name = get_reward_model(
+            script_args.reward_model_output_path, current_device,
+        )
+        reward_model_tokenizer = get_tokenizer(reward_model_name)
 
-    # Create reward function
-    get_rewards = create_reward_fn(
-        reward_model=reward_model,
-        reward_model_tokenizer=reward_model_tokenizer,
-        rm_batch_size=script_args.rm_batch_size,
-        template=template,
-        device=current_device,
-    )
+        # Move the reward model to the last process
+        reward_model_device = script_args.num_gpus - 1
+        print(f"Moving reward model to device {reward_model_device}")
+        reward_model = reward_model.to(reward_model_device)
+
+        # Create reward function
+        get_rewards = create_reward_fn(
+            reward_model, reward_model_tokenizer,
+            script_args.rm_batch_size,
+            template, reward_model_device,
+        )
 
     # Model
     model = get_model(script_args.model_name, current_device)
@@ -120,7 +132,6 @@ def main():
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": 100_000, # why is this value like this?
         "pad_to_multiple_of": 8, # TODO: double-check, but this seems to work and to be faster
-        "max_new_tokens": response_max_len, # TODO: think how to approach this
     }
 
     # Store starting time to get training duration in HH:MM:SS format later
@@ -131,8 +142,10 @@ def main():
         tokenizer=tokenizer,
         generation_kwargs=generation_kwargs,
         get_rewards=get_rewards,
+        template=template,
         script_args=script_args,
         config=config,
+        device=current_device,
     )
     elapsed_time = datetime.now() - start_time
     elapsed_time = datetime.utcfromtimestamp(
