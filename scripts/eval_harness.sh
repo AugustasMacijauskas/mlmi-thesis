@@ -6,17 +6,27 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-gpu=12
 #SBATCH -J augustas-thesis
-#SBATCH --time=02:30:00
+#SBATCH --time=20:00:00
 #SBATCH --mail-type=NONE
 
 # My own code
+
+# ----------------------------------------
+# GPU
+# ----------------------------------------
 cuda_devices=$(echo $CUDA_VISIBLE_DEVICES)  # Store the value of CUDA_VISIBLE_DEVICES in a variable
 echo "CUDA_VISIBLE_DEVICES: $cuda_devices"
 nvidia-smi --query-gpu=gpu_name --format=csv,noheader | head -n 1
 
+# ----------------------------------------
+# Environment
+# ----------------------------------------
 conda env list | grep "*"
 python --version
 
+# ----------------------------------------
+# Output path
+# ----------------------------------------
 workdir="$SLURM_SUBMIT_DIR"
 cd $workdir
 
@@ -27,102 +37,99 @@ echo "Running on master node: `hostname`"
 echo "Current directory: `pwd`"
 
 now=$(date "+%Y%m%d_%H%M%S")
-# keyword="unifiedqa_t5_3b_rte_ccs"
-# keyword="unifiedqa_t5_3b_custom_data"
-# keyword="unifiedqa-v2-t5-large-1363200_custom_data_first_encoder"
-# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_all_more_data"
-# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v3_first_more_data_ccs"
-# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v3_all_more_data_ccs"
-# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v4_all"
-# version="v2"
-# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_imdb_${version}_first"
-# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_imdb_${version}_all"
-# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_imdb_${version}_all_more_data"
-# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_all_more_data"
-# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_v2_all_ccs"
-# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_v3_all_ccs"
-# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_v4_all"
-# keyword="unifiedqa-v2-t5-11b-1363200_individual_imdb_first"
-# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_imdb_${version}_first"
-# keyword="deberta_v3_large_ag_news"
-# keyword="deberta_v3_large_custom_data_first"
-# keyword="deberta-v2-xxlarge_test"
-# keyword="deberta_v3_large_custom_data_ag_news"
-# keyword="gpt-j-6b_truthful_qc_mc"
-# keyword="gpt-j-6b_custom_data"
-# keyword="dolly-v2-3b_custom_data_v2_all"
-# keyword="dolly-v2-3b_custom_data_v3_all"
-# keyword="dolly-v2-3b_truthful_qc_mc"
-# keyword="dolly-v2-3b_individual_imdb_first"
-# keyword="gpt2_custom_data_v4_all"
-# keyword="gpt2-xl_individual_imdb_first"
-# keyword="gpt2-xl_imdb"
-keyword="gpt2-xl_rlhfed_imdb"
-# keyword="gpt2-xl_rlhfed_custom_data_v4_all"
+# keyword="gpt2-xl_openllm"
 cd ..
-save_path="logs/${keyword}_${now}_${JOBID}"
-mkdir $save_path
+# save_path="logs_eval/${keyword}_${now}_${JOBID}"
+save_path=$1
+echo "Save path: $save_path"
 cd $workdir
+out_file_path="../$save_path/out.$JOBID"
 
-# Application and its run options:
-application="elk"
+# ----------------------------------------
+# Application
+# ----------------------------------------
+application="python"
 
 # ----------------------------------------
 # Model
 # ----------------------------------------
-# model="gpt2"
-# model="gpt2-xl"
 model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230708_234722_29602/checkpoints/model_step_10"
-# model="EleutherAI/gpt-j-6b"
-# model="databricks/dolly-v2-3b"
-# model="allenai/unifiedqa-t5-3b"
-# model="allenai/unifiedqa-v2-t5-large-1363200"
-# model="allenai/unifiedqa-v2-t5-3b-1363200"
-# model="allenai/unifiedqa-v2-t5-11b-1363200"
-# model="microsoft/deberta-v3-large"
-# model="microsoft/deberta-v2-xxlarge"
+# model="/fsx/home-augustas/ppo_runs/gpt2-xl_unifiedqa_3b_20230704_091318_26861/model_step_6"
+# model="gpt2-xl"
 
-dataset="imdb"
-# dataset="super_glue:rte"
-# dataset="AugustasM/burns-datasets-VINC"
-# dataset="AugustasM/burns-datasets-VINC-v2"
-# dataset="AugustasM/burns-datasets-VINC-v3"
-# dataset="AugustasM/burns-datasets-VINC-v4"
-# dataset="AugustasM/burns-datasets-VINC-$version"
-# dataset="AugustasM/burns-datasets-VINC-imdb-$version"
-# dataset="EleutherAI/truthful_qa_mc"
-# dataset="truthful_qa_mc"
-# dataset="AugustasM/burns-datasets-VINC-ag_news"
-# dataset="AugustasM/burns-datasets-VINC-individual-imdb"
-
-# template_path="AugustasM/burns-datasets-VINC/first"
-# template_path="AugustasM/burns-datasets-VINC/all"
-# template_path="reaganjlee/truthful_qa_mc"
-
-# reporter_path="databricks/dolly-v2-3b/AugustasM/burns-datasets-VINC/reverent-yalow"
-
-# options=$1
-# options="elicit $model $dataset --num_gpus=1 --max_examples 100 100"
-# options="elicit $model $dataset --num_gpus=1 --use_encoder_states"
-# options="elicit $model $dataset --num_gpus=1 --net=ccs"
-options="elicit $model $dataset --num_gpus=1"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --num_shots=1"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --disable_cache"
-# options="elicit $model $dataset --num_gpus=1 --disable_cache"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --use_encoder_states --net=ccs"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --net=ccs"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --max_examples 1000 2000"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --max_examples 10000 2000"
-# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
-# options="eval $reporter_path $model $dataset --num_gpus=1 --template_path=$template_path"
-
-out_file_path="../$save_path/out.$JOBID"
-CMD="$application $options > $out_file_path"
-
-# Log the start time and execute the command
+# Log the start time and start executing the commands
 start=`date +%s`
-cd ../elk
+cd ../lm-evaluation-harness
+
+# ----------------------------------------
+# ARC
+# ----------------------------------------
+# task="arc_challenge"
+# shots="25"
+# options="main.py \
+#     --model=hf-causal \
+#     --model_args=pretrained=$model \
+#     --tasks=$task \
+#     --num_fewshot=$shots \
+#     --batch_size=16 \
+#     --output_path=/fsx/home-augustas/$save_path/outputs/$task-$shots-shot.json \
+# " # Can add device here: --device cuda
+# CMD="$application $options > $out_file_path"
+# echo -e "\nExecuting command:\n==================\n$CMD\n"
+# eval $CMD
+
+# ----------------------------------------
+# TruthfulQA
+# ----------------------------------------
+# tasks="truthfulqa_mc"
+# shots="0"
+# options="main.py \
+#     --model=hf-causal \
+#     --model_args=pretrained=$model \
+#     --tasks=$tasks \
+#     --num_fewshot=$shots \
+#     --batch_size=64 \
+#     --output_path=/fsx/home-augustas/$save_path/outputs/$tasks-$shots-shot.json \
+#     --device cuda \
+# " # Can add device here: --device cuda \
+# CMD="$application $options > $out_file_path"
+# echo -e "\nExecuting command:\n==================\n$CMD\n"
+# eval $CMD
+
+# ----------------------------------------
+# HellaSwag
+# ----------------------------------------
+# task="hellaswag"
+# shots="10"
+# options="main.py \
+#     --model=hf-causal \
+#     --model_args=pretrained=$model \
+#     --tasks=$task \
+#     --num_fewshot=$shots \
+#     --batch_size=16 \
+#     --output_path=/fsx/home-augustas/$save_path/outputs/$task-$shots-shot.json \
+# " # Can add device here: --device cuda
+# CMD="$application $options > $out_file_path"
+# echo -e "\nExecuting command:\n==================\n$CMD\n"
+# eval $CMD
+
+# ----------------------------------------
+# MMLU
+# ----------------------------------------
+task="mmlu"
+# tasks="hendrycksTest-abstract_algebra,hendrycksTest-anatomy,hendrycksTest-astronomy,hendrycksTest-business_ethics,hendrycksTest-clinical_knowledge,hendrycksTest-college_biology,hendrycksTest-college_chemistry,hendrycksTest-college_computer_science,hendrycksTest-college_mathematics,hendrycksTest-college_medicine,hendrycksTest-college_physics,hendrycksTest-computer_security,hendrycksTest-conceptual_physics,hendrycksTest-econometrics,hendrycksTest-electrical_engineering,hendrycksTest-elementary_mathematics,hendrycksTest-formal_logic,hendrycksTest-global_facts,hendrycksTest-high_school_biology,hendrycksTest-high_school_chemistry,hendrycksTest-high_school_computer_science,hendrycksTest-high_school_european_history,hendrycksTest-high_school_geography,hendrycksTest-high_school_government_and_politics,hendrycksTest-high_school_macroeconomics,hendrycksTest-high_school_mathematics,hendrycksTest-high_school_microeconomics,hendrycksTest-high_school_physics,hendrycksTest-high_school_psychology,hendrycksTest-high_school_statistics,hendrycksTest-high_school_us_history,hendrycksTest-high_school_world_history,hendrycksTest-human_aging,hendrycksTest-human_sexuality,hendrycksTest-international_law,hendrycksTest-jurisprudence,hendrycksTest-logical_fallacies,hendrycksTest-machine_learning,hendrycksTest-management,hendrycksTest-marketing,hendrycksTest-medical_genetics,hendrycksTest-miscellaneous,hendrycksTest-moral_disputes,hendrycksTest-moral_scenarios,hendrycksTest-nutrition,hendrycksTest-philosophy,hendrycksTest-prehistory,hendrycksTest-professional_accounting,hendrycksTest-professional_law,hendrycksTest-professional_medicine,hendrycksTest-professional_psychology,hendrycksTest-public_relations,hendrycksTest-security_studies,hendrycksTest-sociology,hendrycksTest-us_foreign_policy,hendrycksTest-virology,hendrycksTest-world_religions"
+tasks="hendrycksTest-*"
+
+shots="5"
+options="main.py \
+    --model=hf-causal \
+    --model_args=pretrained=$model \
+    --tasks=$tasks \
+    --num_fewshot=$shots \
+    --batch_size=16 \
+    --output_path=/fsx/home-augustas/$save_path/outputs/$task-$shots-shot.json \
+" # Can add device here: --device cuda \
+CMD="$application $options > $out_file_path"
 echo -e "\nExecuting command:\n==================\n$CMD\n"
 eval $CMD
 
@@ -130,9 +137,6 @@ eval $CMD
 cd ../mlmi-thesis
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out ../$save_path
-
-# Create a results file
-python src/utils/get_results.py --file_path=$out_file_path
 
 # Log the duration
 end=`date +%s`

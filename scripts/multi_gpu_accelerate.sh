@@ -53,15 +53,15 @@ echo "Total number of GPUs: $total_num_gpus"
 echo "Number of GPUs for PPO: $ppo_gpus"
 
 # Reward model stuff
-# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_v4_all_20230629_120158_21789"
+reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_v4_all_20230629_120158_21789"
 # reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-11b-1363200_custom_data_imdb_v2_first_20230705_144420_27570"
-reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_imdb_v2_first_20230707_170052_28991"
+# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_imdb_v2_first_20230707_170052_28991"
 echo "Reward model output path: $reward_model_output_path"
 
 # Dataset stuff
 # dataset="AugustasM/burns-datasets-VINC-ppo-training-v3"
-# dataset="AugustasM/burns-datasets-VINC-ppo-training-v4"
-dataset="AugustasM/burns-datasets-VINC-imdb-ppo-training-v2"
+dataset="AugustasM/burns-datasets-VINC-ppo-training-v4"
+# dataset="AugustasM/burns-datasets-VINC-imdb-ppo-training-v2"
 echo "Dataset: $dataset"
 
 options="launch --multi_gpu --num_machines=1 --num_processes=$total_num_gpus \
@@ -89,7 +89,7 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$total_num_gpus \
     --init_kl_coef=0.2 \
     --adap_kl_ctrl=True \
     --seed=0 \
-    --save_freq=6 \
+    --save_freq=4 \
     --output_dir=/fsx/home-augustas/$save_path/checkpoints/model_ \
 "
 
