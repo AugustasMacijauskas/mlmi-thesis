@@ -94,8 +94,9 @@ def dict_to_markdown(outputs):
             
     return ret
 
-def process_results(file_path):
+def process_results(file_path, suffix=""):
     csv_file = get_last_line(file_path)
+    print(csv_file)
 
     outputs = {}
     for column_name, column_label in COLUMNS_TO_EXTRACT_DICT.items():
@@ -114,6 +115,11 @@ def process_results(file_path):
     outputs = dict_to_markdown(outputs)
 
     identifier = file_path.name.split(".")[-1]
+
+    # Check suffix is not empty
+    if suffix:
+        identifier += f"-{suffix}"
+        
     output_path = file_path.parent / f"results-{identifier}.md"
     with open(output_path, "w") as file:
         file.write(outputs)
@@ -124,11 +130,12 @@ def process_results(file_path):
 def main():
     parser = argparse.ArgumentParser(description='Process experimental results.')
     parser.add_argument('--file_path', type=str, help='Path to the file containing the last line with CSV path')
+    parser.add_argument('--suffix', type=str, help='(optional) suffix', default="")
     args = parser.parse_args()
 
     file_path = Path(args.file_path)
     
-    return process_results(file_path)
+    return process_results(file_path, args.suffix)
 
 
 if __name__ == "__main__":

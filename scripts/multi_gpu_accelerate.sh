@@ -67,7 +67,6 @@ echo "Dataset: $dataset"
 options="launch --multi_gpu --num_machines=1 --num_processes=$total_num_gpus \
     --mixed_precision=no --dynamo_backend=no \
     src/mvp_0/ppo_training.py \
-    --num_gpus=$total_num_gpus \
     --model_name=$model \
     --tokenizer_name=$model \
     --reward_model_output_path=$reward_model_output_path \

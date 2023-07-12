@@ -3,13 +3,18 @@
 #SBATCH -A trlx
 #SBATCH -p g40
 #SBATCH --nodes=1
-#SBATCH --gpus=1
+#SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
 #SBATCH -J augustas-thesis
 #SBATCH --time=02:30:00
 #SBATCH --mail-type=NONE
 
 #! My own code
+cuda_devices=$(echo $CUDA_VISIBLE_DEVICES)  # Store the value of CUDA_VISIBLE_DEVICES in a variable
+echo "CUDA_VISIBLE_DEVICES: $cuda_devices"
+
+num_gpus=$(echo $cuda_devices | awk -F, '{print NF}')
+
 export ELK_DIR="/fsx/home-augustas/VINC-logs"
 source /admin/home-${USER}/.bashrc
 conda env list | grep "*"
@@ -33,7 +38,9 @@ now=$(date "+%Y%m%d_%H%M%S")
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v3_first_more_data_ccs"
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v3_all_more_data_ccs"
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_v4_all"
+# template_number="4"
 # version="v2"
+# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_${version}_single_$template_number"
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_imdb_${version}_first"
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_imdb_${version}_all"
 # keyword="unifiedqa-v2-t5-3b-1363200_custom_data_imdb_${version}_all_more_data"
@@ -42,7 +49,8 @@ now=$(date "+%Y%m%d_%H%M%S")
 # keyword="unifiedqa-v2-t5-11b-1363200_custom_data_v3_all_ccs"
 # keyword="unifiedqa-v2-t5-11b-1363200_custom_data_v4_all"
 # keyword="unifiedqa-v2-t5-11b-1363200_individual_imdb_first"
-# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_imdb_${version}_first"
+# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_${version}_first"
+# keyword="unifiedqa-v2-t5-11b-1363200_custom_data_${version}_single_$template_number"
 # keyword="deberta_v3_large_ag_news"
 # keyword="deberta_v3_large_custom_data_first"
 # keyword="deberta-v2-xxlarge_test"
@@ -53,10 +61,12 @@ now=$(date "+%Y%m%d_%H%M%S")
 # keyword="dolly-v2-3b_custom_data_v3_all"
 # keyword="dolly-v2-3b_truthful_qc_mc"
 # keyword="dolly-v2-3b_individual_imdb_first"
+# keyword="dolly-v2-3b_imdb"
+keyword="gpt2_test"
 # keyword="gpt2_custom_data_v4_all"
 # keyword="gpt2-xl_individual_imdb_first"
 # keyword="gpt2-xl_imdb"
-keyword="gpt2-xl_rlhfed_imdb"
+# keyword="gpt2-xl_rlhfed_imdb"
 # keyword="gpt2-xl_rlhfed_custom_data_v4_all"
 cd ..
 save_path="logs/${keyword}_${now}_${JOBID}"
@@ -69,9 +79,9 @@ application="elk"
 # ----------------------------------------
 # Model
 # ----------------------------------------
-# model="gpt2"
+model="gpt2"
 # model="gpt2-xl"
-model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230708_234722_29602/checkpoints/model_step_10"
+# model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230708_234722_29602/checkpoints/model_step_10"
 # model="EleutherAI/gpt-j-6b"
 # model="databricks/dolly-v2-3b"
 # model="allenai/unifiedqa-t5-3b"
@@ -83,6 +93,7 @@ model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230708_234722_29602/ch
 
 dataset="imdb"
 # dataset="super_glue:rte"
+# dataset="glue:qnli"
 # dataset="AugustasM/burns-datasets-VINC"
 # dataset="AugustasM/burns-datasets-VINC-v2"
 # dataset="AugustasM/burns-datasets-VINC-v3"
@@ -104,7 +115,9 @@ dataset="imdb"
 # options="elicit $model $dataset --num_gpus=1 --max_examples 100 100"
 # options="elicit $model $dataset --num_gpus=1 --use_encoder_states"
 # options="elicit $model $dataset --num_gpus=1 --net=ccs"
-options="elicit $model $dataset --num_gpus=1"
+# options="elicit $model $dataset --num_gpus=$num_gpus"
+# options="elicit $model $dataset --num_gpus=$num_gpus --min_gpu_mem=0"
+options="elicit $model $dataset --num_gpus=$num_gpus --min_gpu_mem=0 --data.seed=1 --disable_cache"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --num_shots=1"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --disable_cache"
 # options="elicit $model $dataset --num_gpus=1 --disable_cache"
@@ -113,6 +126,8 @@ options="elicit $model $dataset --num_gpus=1"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --net=ccs"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --max_examples 1000 2000"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --max_examples 10000 2000"
+# options="elicit $model $dataset --num_gpus=1 --template_path=$template_path --net.seed=0"
+# options="elicit $model $dataset --num_gpus=$num_gpus --min_gpu_mem=0 --template_path=$template_path --prompt_indices $template_number"
 # options="elicit $model $dataset --num_gpus=1 --template_path=$template_path"
 # options="eval $reporter_path $model $dataset --num_gpus=1 --template_path=$template_path"
 

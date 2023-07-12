@@ -4,9 +4,10 @@ from pathlib import Path
 
 
 dataset_to_result_key = {
-    "arc_challenge": "acc_norm",
-    "hellaswag": "acc_norm,none",
+    # "arc_challenge": "acc_norm",
+    "arc_challenge": "acc_norm,none",
     # "hellaswag": "acc_norm",
+    "hellaswag": "acc_norm,none",
     "mmlu": "acc_norm,none",
     "truthfulqa_mc": "mc2",
 }
@@ -20,9 +21,9 @@ def main():
     
     # Get the files in the output folder
     output_folder = Path("/fsx/home-augustas/" + args.output_path)
-    files = list(output_folder.glob("outputs/*-shot.json"))
+    files = list(output_folder.glob("outputs/*-shot.jsonl"))
+    files.extend(output_folder.glob("outputs/truthfulqa_mc-0-shot.json"))
     files.extend(output_folder.glob("outputs/mmlu-5-shot.json"))
-    files.extend(output_folder.glob("outputs/hellaswag-10-shot.jsonl"))
     files = sorted(files, key=lambda x: x.name)
 
     # Iterate through the json files and get the results
