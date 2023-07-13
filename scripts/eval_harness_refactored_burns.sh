@@ -108,7 +108,7 @@ eval $CMD
 # ----------------------------------------
 # Move the output file
 # ----------------------------------------
-cd ../mlmi-thesis
+cd ../../mlmi-thesis
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out ../$save_path
 

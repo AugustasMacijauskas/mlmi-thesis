@@ -18,7 +18,8 @@ def dict_to_markdown(outputs):
     ret += "| dataset | accuracy |\n"
     ret += "| --- | --- |\n"
 
-    for dataset, accuracy in outputs.items():
+    for dataset in sorted(outputs.keys()):
+        accuracy = outputs[dataset]
         ret += f"| {dataset} | {accuracy:.2f}% |\n"
     
     # Average
@@ -31,10 +32,12 @@ def dict_to_markdown(outputs):
 
 def process_results(output_path):
     result_files = list(output_path.glob("results-out-*.md"))
+    assert len(result_files) <= 9
 
     outputs = {}
     for file_path in result_files:
         dataset_name = file_path.stem.split("-")[2]
+        dataset_name = dataset_name.split(":")[-1]
         
         accuracy = get_accuracy_from_file(file_path)
         outputs[dataset_name] = accuracy
@@ -53,7 +56,6 @@ def process_results(output_path):
 def main():
     parser = argparse.ArgumentParser(description='Process experimental results.')
     parser.add_argument('--output_path', type=str, help='Path to the folder containing the evalution results')
-    parser.add_argument('--suffix', type=str, help='(optional) suffix', default="")
     args = parser.parse_args()
 
     output_path = Path(args.output_path)

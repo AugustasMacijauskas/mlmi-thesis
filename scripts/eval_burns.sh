@@ -20,9 +20,9 @@
 # ----------------------------------------
 # Environment configuration
 # ----------------------------------------
-export ELK_DIR="/fsx/home-augustas/VINC-logs"
 conda env list | grep "*"
 python --version
+squeue --me | grep $SLURM_JOB_ID
 
 
 # ----------------------------------------
@@ -53,29 +53,39 @@ echo "Current directory: `pwd`"
 # ----------------------------------------
 # Save path
 # ----------------------------------------
-keyword="dolly-v2-3b_imdb"
+# keyword="dolly-v2-3b_imdb"
+# keyword="gpt2-xl_test"
+# keyword="gpt2-xl"
+# keyword="gpt2-xl_rlhfed"
+# keyword="gpt2-xl_imdb_rlhfed"
 
 cd ..
 now=$(date "+%Y%m%d_%H%M%S")
-save_path="logs_eval_burns/${keyword}_${now}_${JOBID}"
+# save_path="logs_eval_burns/${keyword}_${now}_${JOBID}"
+save_path="logs_eval_burns/gpt2-xl_rlhfed_20230712_143355_33041"
 mkdir $save_path
 cd $workdir
-
-out_file_path="../$save_path/out.$JOBID"
 
 
 # ----------------------------------------
 # Model
 # ----------------------------------------
 # model="databricks/dolly-v2-3b"
-model="gpt2-xl"
+# model="gpt2-xl"
+model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230704_091318_26861/checkpoints/model_step_6"
+# model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230711_080057_31473/checkpoints/model_step_12"
+# model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230708_234722_29602/checkpoints/model_step_10"
+echo -e "model: $model\n"
 
 
 # ----------------------------------------
 # Datasets
 # ----------------------------------------
 # all_datasets="ag_news,amazon_polarity,super_glue:boolq,super_glue:copa,dbpedia_14,imdb,piqa,glue:qnli,super_glue:rte"
-all_datasets="ag_news,glue:qnli"
+# all_datasets="super_glue:copa,super_glue:rte"
+all_datasets="imdb,piqa,glue:qnli,super_glue:rte"
+# all_datasets="imdb"
+echo -e "all_datasets: $all_datasets\n"
 
 
 # ----------------------------------------
@@ -96,118 +106,40 @@ IFS=','
 
 # Iterate over each dataset in the list
 for dataset_name in $all_datasets; do
-    echo "Processing dataset: $dataset_name"
+    echo -e "\nProcessing dataset: $dataset_name"
 
-    options="elicit $model $dataset_name --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 400000"
+    out_dir="/fsx/home-augustas/$save_path/$dataset_name"
+    echo "Output directory: $out_dir"
+
+    options="elicit $model $dataset_name \
+        --num_gpus=$num_gpus --min_gpu_mem=0 \
+        --layers=1 \
+        --supervised=none \
+        --disable_cache \
+        --max_examples 5 10000 \
+        --out_dir=$out_dir \
+    "
+    out_file_path="../$save_path/out-$dataset_name-$JOBID.out"
     CMD="elk $options > $out_file_path"
     echo -e "\nExecuting command:\n==================\n$CMD\n"
     eval $CMD
 
     # Create a results file
-    python src/utils/get_results.py --file_path=$out_file_path
+    python ../mlmi-thesis/src/utils/get_results_burns.py --file_path=$out_file_path --suffix=$dataset_name
 done
 
 
 # ----------------------------------------
-# ag_news
+# Average out the results
 # ----------------------------------------
-options="elicit $model ag_news --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 7600"
-CMD="elk $options > $out_file_path"
-echo -e "\nExecuting command:\n==================\n$CMD\n"
-eval $CMD
-
-# Create a results file
-python src/utils/get_results.py --file_path=$out_file_path
-
-
-# ----------------------------------------
-# amazon_polarity
-# ----------------------------------------
-# options="elicit $model amazon_polarity --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 400000"
-# CMD="elk $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
-
-# # Create a results file
-# python src/utils/get_results.py --file_path=$out_file_path
-
-
-# ----------------------------------------
-# dbpedia_14
-# ----------------------------------------
-# options="elicit $model dbpedia_14 --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 70000"
-# CMD="elk $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
-
-# # Create a results file
-# python src/utils/get_results.py --file_path=$out_file_path
-
-
-# ----------------------------------------
-# glue:qnli
-# ----------------------------------------
-options="elicit $model glue:qnli --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 5463"
-CMD="elk $options > $out_file_path"
-echo -e "\nExecuting command:\n==================\n$CMD\n"
-eval $CMD
-
-# Create a results file
-python src/utils/get_results.py --file_path=$out_file_path
-
-
-# ----------------------------------------
-# imdb
-# ----------------------------------------
-options="elicit $model imdb --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 25000"
-CMD="elk $options > $out_file_path"
-echo -e "\nExecuting command:\n==================\n$CMD\n"
-eval $CMD
-
-# Create a results file
-python src/utils/get_results.py --file_path=$out_file_path
-
-
-# ----------------------------------------
-# piqa
-# ----------------------------------------
-options="elicit $model piqa --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 1838"
-CMD="elk $options > $out_file_path"
-echo -e "\nExecuting command:\n==================\n$CMD\n"
-eval $CMD
-
-# Create a results file
-python src/utils/get_results.py --file_path=$out_file_path
-
-
-# ----------------------------------------
-# super_glue:boolq
-# ----------------------------------------
-options="elicit $model super_glue:boolq --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 3270"
-CMD="elk $options > $out_file_path"
-echo -e "\nExecuting command:\n==================\n$CMD\n"
-eval $CMD
-
-# Create a results file
-python src/utils/get_results.py --file_path=$out_file_path
-
-
-# ----------------------------------------
-# super_glue:boolq
-# ----------------------------------------
-options="elicit $model super_glue:boolq --num_gpus=$num_gpus --min_gpu_mem=0 --disable_cache --num_examples 100 3270"
-CMD="elk $options > $out_file_path"
-echo -e "\nExecuting command:\n==================\n$CMD\n"
-eval $CMD
-
-# Create a results file
-python src/utils/get_results.py --file_path=$out_file_path
+cd ..
+python mlmi-thesis/src/utils/get_results_burns_averaged.py --output_path=$save_path
 
 
 # ----------------------------------------
 # Move the output file
 # ----------------------------------------
-cd ../mlmi-thesis
+cd mlmi-thesis
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out ../$save_path
 
