@@ -81,9 +81,9 @@ echo -e "model: $model\n"
 # ----------------------------------------
 # Datasets
 # ----------------------------------------
-# all_datasets="ag_news,amazon_polarity,super_glue:boolq,super_glue:copa,dbpedia_14,imdb,piqa,glue:qnli,super_glue:rte"
+# all_datasets="ag_news,amazon_polarity,super_glue:boolq,super_glue:copa,dbpedia_14,imdb,glue:qnli,super_glue:rte"
 # all_datasets="super_glue:copa,super_glue:rte"
-all_datasets="imdb,piqa,glue:qnli,super_glue:rte"
+all_datasets="imdb,glue:qnli,super_glue:rte"
 # all_datasets="imdb"
 echo -e "all_datasets: $all_datasets\n"
 

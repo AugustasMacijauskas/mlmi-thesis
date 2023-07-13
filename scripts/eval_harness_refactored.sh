@@ -33,9 +33,7 @@ echo "Running on master node: `hostname`"
 echo "Current directory: `pwd`"
 
 now=$(date "+%Y%m%d_%H%M%S")
-# version="v2"
-# keyword="unifiedqa-v2-t5-3b-1363200_custom_data_imdb_${version}_first"
-keyword="gpt2-xl_rlhfed"
+keyword="gpt2-xl_imdb_rlhfed"
 cd ..
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 mkdir $save_path
@@ -50,8 +48,8 @@ application="accelerate launch --multi_gpu --num_machines=1 --num_processes=$num
 # Model
 # ----------------------------------------
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230704_091318_26861/checkpoints/model_step_6"
-model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230711_080057_31473/checkpoints/model_step_12"
-# model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230708_234722_29602/checkpoints/model_step_10"
+# model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230711_080057_31473/checkpoints/model_step_12"
+model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230708_234722_29602/checkpoints/model_step_10"
 # model="gpt2-xl"
 # model="databricks/dolly-v2-3b"
 
@@ -96,26 +94,26 @@ eval $CMD
 # ----------------------------------------
 # TruthfulQA
 # ----------------------------------------
-tasks="truthfulqa_mc"
-shots="0"
-options="main.py \
-    --model=hf-causal \
-    --model_args=pretrained=$model \
-    --tasks=$tasks \
-    --num_fewshot=$shots \
-    --batch_size=32 \
-    --output_path=/fsx/home-augustas/$save_path/outputs/$tasks-$shots-shot.json \
-    --device cuda \
-" # Can add device here: --device cuda \
-cd ../../lm-evaluation-harness
-application="python"
-out_file_path="../$save_path/out.$JOBID"
-CMD="$application $options > $out_file_path"
-echo -e "\nExecuting command:\n==================\n$CMD\n"
-eval $CMD
+# tasks="truthfulqa_mc"
+# shots="0"
+# options="main.py \
+#     --model=hf-causal \
+#     --model_args=pretrained=$model \
+#     --tasks=$tasks \
+#     --num_fewshot=$shots \
+#     --batch_size=32 \
+#     --output_path=/fsx/home-augustas/$save_path/outputs/$tasks-$shots-shot.json \
+#     --device cuda \
+# " # Can add device here: --device cuda \
+# cd ../../lm-evaluation-harness
+# application="python"
+# out_file_path="../$save_path/out.$JOBID"
+# CMD="$application $options > $out_file_path"
+# echo -e "\nExecuting command:\n==================\n$CMD\n"
+# eval $CMD
 
 # Move the output file
-cd ../mlmi-thesis
+cd /fsx/home-augustas/mlmi-thesis
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out ../$save_path
 
