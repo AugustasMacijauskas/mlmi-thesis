@@ -6,7 +6,7 @@
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
 #SBATCH -J augustas-thesis
-#SBATCH --time=04:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mail-type=NONE
 
 
@@ -56,22 +56,25 @@ echo "Current directory: `pwd`"
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
 # keyword="gpt2-xl_rlhfed_imdb_openllm"
-keyword="gpt2-xl_test_qnli"
+# keyword="gpt2-xl_test_updates"
+# keyword="gpt2-xl"
+# keyword="gpt2-xl_rlhfed_short"
+# keyword="gpt2-xl_rlhfed_long"
+keyword="gpt2-xl_imdb_rlhfed"
 save_path="logs_eval_burns/${keyword}_${now}_${JOBID}"
 cd ..
 mkdir $save_path
 mkdir "$save_path/outputs"
 cd $workdir
-out_file_path="../../$save_path/out.$JOBID"
 
 
 # ----------------------------------------
 # Model
 # ----------------------------------------
+# model="gpt2-xl"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230704_091318_26861/checkpoints/model_step_6"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230711_080057_31473/checkpoints/model_step_12"
 model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230708_234722_29602/checkpoints/model_step_10"
-# model="gpt2-xl"
 # model="databricks/dolly-v2-3b"
 echo "Model: $model"
 
@@ -79,9 +82,7 @@ echo "Model: $model"
 # ----------------------------------------
 # All tasks
 # ----------------------------------------
-# all_tasks="ag_news,amazon_polarity,boolq_custom,copa_custom,dbpedia_14,imdb,qnli,rte_custom"
-# all_tasks="ag_news,boolq_custom,copa_custom,imdb,qnli,rte_custom"
-all_tasks="boolq_custom,copa_custom,rte_custom"
+all_tasks="ag_news_binarized,boolq,copa,imdb,qnli_custom,rte_custom,dbpedia_14_binarized,amazon_polarity"
 echo -e "All tasks: $all_tasks\n"
 
 
@@ -113,130 +114,14 @@ for task in $all_tasks; do
         --model=hf \
         --model_args=pretrained=$model \
         --tasks=$task \
-        --batch_size=32 \
+        --batch_size=16 \
         --output_path=$output_path \
-        --no_sample_logging \
     "
     out_file_path="../../$save_path/out-$task-$JOBID.out"
     CMD="$application $options > $out_file_path"
     echo -e "\nExecuting command:\n==================\n$CMD\n"
     eval $CMD
 done
-
-
-# ----------------------------------------
-# ag_news
-# ----------------------------------------
-# task="ag_news"
-# options="main.py \
-#     --model=hf \
-#     --model_args=pretrained=$model \
-#     --tasks=$task \
-#     --batch_size=32 \
-#     --output_path=../../$save_path/outputs/$task.jsonl \
-# "
-# CMD="$application $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
-
-
-# ----------------------------------------
-# amazon_polarity
-# ----------------------------------------
-task="amazon_polarity"
-options="main.py \
-    --model=hf \
-    --model_args=pretrained=$model \
-    --tasks=$task \
-    --batch_size=64 \
-    --output_path=../../$save_path/outputs/$task.jsonl \
-    --no_sample_logging \
-"
-CMD="$application $options > $out_file_path"
-echo -e "\nExecuting command:\n==================\n$CMD\n"
-eval $CMD
-
-
-# ----------------------------------------
-# BoolQ
-# ----------------------------------------
-# task="boolq_custom"
-# options="main.py \
-#     --model=hf \
-#     --model_args=pretrained=$model \
-#     --tasks=$task \
-#     --batch_size=32 \
-#     --output_path=../../$save_path/outputs/$task.jsonl \
-# "
-# CMD="$application $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
-
-
-# ----------------------------------------
-# dbpedia_14
-# ----------------------------------------
-# task="dbpedia_14"
-# options="main.py \
-#     --model=hf \
-#     --model_args=pretrained=$model \
-#     --tasks=$task \
-#     --batch_size=32 \
-#     --output_path=../../$save_path/outputs/$task.jsonl \
-# "
-# CMD="$application $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
-
-
-# ----------------------------------------
-# imdb
-# ----------------------------------------
-# task="imdb"
-# options="main.py \
-#     --model=hf \
-#     --model_args=pretrained=$model \
-#     --tasks=$task \
-#     --batch_size=32 \
-#     --output_path=../../$save_path/outputs/$task.jsonl \
-# "
-# CMD="$application $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
-
-
-# ----------------------------------------
-# QNLI
-# ----------------------------------------
-# task="qnli"
-# options="main.py \
-#     --model=hf \
-#     --model_args=pretrained=$model \
-#     --tasks=$task \
-#     --batch_size=32 \
-#     --output_path=../../$save_path/outputs/$task.jsonl \
-#     --no_sample_logging \
-# "
-# CMD="$application $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
-
-
-# ----------------------------------------
-# RTE
-# ----------------------------------------
-# task="rte_custom"
-# options="main.py \
-#     --model=hf \
-#     --model_args=pretrained=$model \
-#     --tasks=$task \
-#     --batch_size=32 \
-#     --output_path=../../$save_path/outputs/$task.jsonl \
-# "
-# CMD="$application $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
-
 
 # ----------------------------------------
 # Copa
@@ -252,10 +137,17 @@ eval $CMD
 # "
 # cd ../../lm-evaluation-harness
 # application="python"
-# out_file_path="../$save_path/out.$JOBID"
+# out_file_path="../$save_path/out-$task-$JOBID.out"
 # CMD="$application $options > $out_file_path"
 # echo -e "\nExecuting command:\n==================\n$CMD\n"
 # eval $CMD
+
+
+# ----------------------------------------
+# Average out the results
+# ----------------------------------------
+cd /fsx/home-augustas/
+python mlmi-thesis/src/utils/get_harness_results_burns.py --output_path=$save_path
 
 
 # ----------------------------------------

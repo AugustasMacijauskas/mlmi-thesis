@@ -33,7 +33,7 @@ echo "Running on master node: `hostname`"
 echo "Current directory: `pwd`"
 
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="gpt2-xl_imdb_rlhfed"
+keyword="gpt2-xl"
 cd ..
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 mkdir $save_path
@@ -49,8 +49,8 @@ application="accelerate launch --multi_gpu --num_machines=1 --num_processes=$num
 # ----------------------------------------
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230704_091318_26861/checkpoints/model_step_6"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_20230711_080057_31473/checkpoints/model_step_12"
-model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230708_234722_29602/checkpoints/model_step_10"
-# model="gpt2-xl"
+# model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230708_234722_29602/checkpoints/model_step_10"
+model="gpt2-xl"
 # model="databricks/dolly-v2-3b"
 
 # Log the start time and start executing the commands
