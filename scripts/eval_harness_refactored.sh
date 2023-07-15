@@ -69,7 +69,7 @@ options="main.py \
     --num_fewshot=$shots \
     --batch_size=8 \
     --output_path=../../$save_path/outputs/$task-$shots-shot.jsonl \
-" # Can add device here: --device cuda:0
+"
 CMD="$application $options > $out_file_path"
 echo -e "\nExecuting command:\n==================\n$CMD\n"
 eval $CMD
@@ -86,7 +86,7 @@ options="main.py \
     --num_fewshot=$shots \
     --batch_size=8 \
     --output_path=../../$save_path/outputs/$task-$shots-shot.jsonl \
-" # Can add device here: --device cuda
+"
 CMD="$application $options > $out_file_path"
 echo -e "\nExecuting command:\n==================\n$CMD\n"
 eval $CMD

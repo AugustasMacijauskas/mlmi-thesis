@@ -57,6 +57,7 @@ def get_dataset(dataset_name, tokenizer, num_proc=12, subsets_to_delete=None):
     dataset = load_dataset(dataset_name, split="train")
     original_column_names = dataset.column_names # will be removed later
     original_column_names.remove("prompt") # but want to keep the prompt
+    original_column_names.remove("best_response") # and want to keep the prompt
 
     # Delete certain subsets if desired
     if subsets_to_delete is not None:

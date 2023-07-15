@@ -11,7 +11,7 @@ dataset_to_result_key = {
     "boolq_custom": "acc,none",
     # "copa": "acc",
     "copa": "acc,none",
-    # "dbpedia_14": "acc,none",
+    "dbpedia_14": "acc,none",
     "dbpedia_14_binarized": "acc,none",
     "imdb": "acc,none",
     # "qnli": "acc,none",
@@ -46,7 +46,7 @@ def main():
     
     # Get the files in the output folder
     output_folder = Path("/fsx/home-augustas/" + args.output_path)
-    files = list(output_folder.glob("outputs/*.jsonl"))
+    files = list(output_folder.glob("outputs_burns/*.jsonl"))
     files = [x for x in files if not "gpt" in x.name] # TODO: remove this dirty hack
     files = sorted(files, key=lambda x: x.name)
     print([x.name for x in files])
@@ -73,7 +73,7 @@ def main():
     print(markdown_outputs)
 
     identifier = output_folder.name.split("_")[-1]
-    summary_path = output_folder / f"results-summary-{identifier}.md"
+    summary_path = output_folder / f"results-summary-burns-{identifier}.md"
     print(summary_path)
     with open(summary_path, "w") as file:
         file.write(markdown_outputs)

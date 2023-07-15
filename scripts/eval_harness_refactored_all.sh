@@ -56,15 +56,16 @@ echo "Current directory: `pwd`"
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
 # keyword="gpt2-xl_rlhfed_imdb_openllm"
-# keyword="gpt2-xl_test_updates"
+keyword="gpt2-xl_test_updates"
 # keyword="gpt2-xl"
 # keyword="gpt2-xl_rlhfed_short"
 # keyword="gpt2-xl_rlhfed_long"
-keyword="gpt2-xl_imdb_rlhfed"
+# keyword="gpt2-xl_imdb_rlhfed"
 save_path="logs_eval_burns/${keyword}_${now}_${JOBID}"
 cd ..
 mkdir $save_path
-mkdir "$save_path/outputs"
+mkdir "$save_path/outputs_burns"
+mkdir "$save_path/outputs_open_llm"
 cd $workdir
 
 
@@ -82,8 +83,28 @@ echo "Model: $model"
 # ----------------------------------------
 # All tasks
 # ----------------------------------------
-all_tasks="ag_news_binarized,boolq,copa,imdb,qnli_custom,rte_custom,dbpedia_14_binarized,amazon_polarity"
-echo -e "All tasks: $all_tasks\n"
+# burns_tasks="ag_news_binarized,boolq,copa,imdb,qnli_custom,rte_custom,dbpedia_14_binarized,amazon_polarity"
+echo "Burns tasks: $burns_tasks"
+
+open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"
+open_llm_leaderboard_tasks=""
+echo -e "Open LLM leaderboard tasks: $open_llm_leaderboard_tasks\n"
+
+
+# ----------------------------------------
+# Batch sizes - a lookup table
+# ----------------------------------------
+declare -A batch_sizes
+batch_sizes["amazon_polarity"]="32"
+batch_sizes["ag_news_binarized"]="32"
+batch_sizes["boolq"]="32"
+batch_sizes["copa"]="32"
+batch_sizes["dbpedia_14"]="32"
+batch_sizes["dbpedia_14_binarized"]="32"
+batch_sizes["imdb"]="32"
+batch_sizes["qnli_custom"]="32"
+batch_sizes["arc_challenge"]="16"
+batch_sizes["hellaswag"]="16"
 
 
 # ----------------------------------------
@@ -100,21 +121,30 @@ cd ../lm_evaluation_harness_refactored/lm-evaluation-harness
 # ----------------------------------------
 application="accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus --mixed_precision=no --dynamo_backend=no"
 
+
+# ----------------------------------------
+# Burns tasks
+# ----------------------------------------
+
 # Set the IFS to comma (,) to split the list
 IFS=','
 
 # Iterate over each task in the list
-for task in $all_tasks; do
+for task in $burns_tasks; do
     echo -e "\nEvaluating on task: $task"
 
-    output_path="../../$save_path/outputs/$task.jsonl"
+    output_path="../../$save_path/outputs_burns/$task.jsonl"
     echo "Output directory: $output_path"
+
+    # Get the batch size for the task
+    batch_size=${batch_sizes[$task]}
 
     options="main.py \
         --model=hf \
         --model_args=pretrained=$model \
         --tasks=$task \
-        --batch_size=16 \
+        --batch_size=$batch_size \
+        --log_samples \
         --output_path=$output_path \
     "
     out_file_path="../../$save_path/out-$task-$JOBID.out"
@@ -123,32 +153,90 @@ for task in $all_tasks; do
     eval $CMD
 done
 
+
 # ----------------------------------------
-# Copa
+# Average out the Burns results
 # ----------------------------------------
-# task="copa"
-# options="main.py \
-#     --model=hf-causal \
-#     --model_args=pretrained=$model \
-#     --tasks=$task \
-#     --batch_size=32 \
-#     --output_path=../$save_path/outputs/$task.jsonl \
-#     --device cuda \
-# "
-# cd ../../lm-evaluation-harness
-# application="python"
-# out_file_path="../$save_path/out-$task-$JOBID.out"
-# CMD="$application $options > $out_file_path"
-# echo -e "\nExecuting command:\n==================\n$CMD\n"
-# eval $CMD
+if [[ -n "$burns_tasks" ]]; then
+    cd /fsx/home-augustas/
+    python mlmi-thesis/src/utils/get_harness_results_burns.py --output_path=$save_path
+fi
+
+# ----------------------------------------
+# Open LLM Leaderboard tasks
+# ----------------------------------------
+cd /fsx/home-augustas/lm_evaluation_harness_refactored/lm-evaluation-harness
+
+declare -A num_few_shot_examples
+num_few_shot_examples["arc_challenge"]="25"
+num_few_shot_examples["hellaswag"]="10"
+
+# Iterate over each task in the list
+for task in $open_llm_leaderboard_tasks; do
+    # Skip truthfulqa_mc
+    if [[ "$task" == "truthfulqa_mc" ]]; then
+        continue
+    fi
+
+    echo -e "\nEvaluating on task: $task"
+
+    output_path="../../$save_path/outputs_open_llm/$task-$shots-shot.jsonl"
+    echo "Output directory: $output_path"
+
+    # Get the batch size for the task
+    batch_size=${batch_sizes[$task]}
+
+    # Get the number of few shot examples for the task
+    shots=${num_few_shot_examples[$task]}
+
+    options="main.py \
+        --model=hf \
+        --model_args=pretrained=$model \
+        --tasks=$task \
+        --num_fewshot=$shots \
+        --batch_size=$batch_size \
+        --output_path=$output_path \
+    "
+    out_file_path="../../$save_path/out-$task-$JOBID.out"
+    CMD="$application $options > $out_file_path"
+    echo -e "\nExecuting command:\n==================\n$CMD\n"
+    eval $CMD
+done
 
 
 # ----------------------------------------
-# Average out the results
+# TruthfulQA
 # ----------------------------------------
-cd /fsx/home-augustas/
-python mlmi-thesis/src/utils/get_harness_results_burns.py --output_path=$save_path
 
+# Check if "truthfulqa_mc" is in the list
+if [[ $open_llm_leaderboard_tasks == *"truthfulqa_mc"* ]]; then
+    tasks="truthfulqa_mc"
+    shots="0"
+    options="main.py \
+        --model=hf-causal \
+        --model_args=pretrained=$model \
+        --tasks=$tasks \
+        --num_fewshot=$shots \
+        --batch_size=32 \
+        --output_path=/fsx/home-augustas/$save_path/outputs_open_llm/$tasks-$shots-shot.jsonl \
+        --device cuda \
+    "
+    cd /fsx/home-augustas/lm-evaluation-harness
+    application="python"
+    out_file_path="../$save_path/out-$task-$JOBID.out"
+    CMD="$application $options > $out_file_path"
+    echo -e "\nExecuting command:\n==================\n$CMD\n"
+    eval $CMD
+fi
+
+
+# ----------------------------------------
+# Average out the Open LLM results
+# ----------------------------------------
+if [[ -n "$open_llm_leaderboard_tasks" ]]; then
+    cd /fsx/home-augustas/
+    python mlmi-thesis/src/utils/get_harness_results.py --output_path=$save_path
+fi
 
 # ----------------------------------------
 # Move the output file
