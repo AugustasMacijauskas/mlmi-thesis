@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 
 import pandas as pd
@@ -12,31 +11,32 @@ from transformers import T5ForConditionalGeneration
 
 from utils import get_model_loading_kwargs
 
-# Add local dependencies to PATH
-ELK_PATH = Path("/fsx/home-augustas/elk/")
-modules = [
-    ELK_PATH,
-    ELK_PATH / "elk" / "training",
-]
-for module in modules:
-    if not str(module) in sys.path:
-        sys.path.insert(0, str(module.resolve()))
+# # Add local dependencies to PATH
+# import sys
+# ELK_PATH = Path("/fsx/home-augustas/elk/")
+# modules = [
+#     ELK_PATH,
+#     ELK_PATH / "elk" / "training",
+# ]
+# for module in modules:
+#     if not str(module) in sys.path:
+#         sys.path.insert(0, str(module.resolve()))
 
-# Should now be possible to load the local modules
-from reporter import Reporter
+# # Should now be possible to load the local modules
+# from reporter import Reporter
 
 
 class MyRewardModel(nn.Module):
     def __init__(
-            self, language_model, reporter,
+            self, language_model, probe,
             layer=-1, # last layer by default
             hidden_state_name="decoder_hidden_states", # decoder states by default
         ):
         super().__init__()
 
-        # Store the language model and the reporter
+        # Store the language model and the probe
         self.language_model = language_model
-        self.reporter = reporter
+        self.probe = probe
 
         # Store other variables
         self.layer = layer # which layer to extract
@@ -66,12 +66,12 @@ class MyRewardModel(nn.Module):
         neg_last_tokens = neg_hidden_states[range(len(neg_last_token_index)), neg_last_token_index]
 
         # Get the logits for the two classes
-        pos_logits = self.reporter(pos_last_tokens)
-        neg_logits = self.reporter(neg_last_tokens)
+        pos_logits = self.probe(pos_last_tokens)
+        neg_logits = self.probe(neg_last_tokens)
 
         # Return the difference in logits which will later be
         # passed through a sigmoid function
-        return pos_logits - neg_logits
+        return (pos_logits - neg_logits).float()
 
 
 # Utility function to get the model name from the output path
@@ -88,36 +88,67 @@ def get_model_name(output_path):
 
 
 # Utility function to get the reporter path from the output path
-def get_reporter_path(output_path):
+def get_probe(
+        output_path, current_device,
+        is_bf16_possible=False,
+        supervised=True, metric="auroc_estimate", ensembling="partial",
+    ):
     # Get the run id
     run_id = output_path.name.split("_")[-1]
 
     # Get the line with the elk logs from the output file
     with open(output_path / f"out.{run_id}", 'r') as file:
-        vinc_logs_path = file.readlines()[-1].strip()
-    vinc_logs_path = Path(vinc_logs_path.split(" ")[-1][4:-4])
+        lines = [line.strip() for line in file.readlines()]
+    
+    output_directory_line = [line for line in lines if line.startswith("Output directory at")]
+    assert len(output_directory_line) == 1
+    vinc_logs_path = Path(output_directory_line[0].split(" ")[-1][4:-4])
 
     # Get the best layer
-    df = pd.read_csv(vinc_logs_path / "eval.csv")
+    filename = "lr_eval.csv" if supervised else "eval.csv"
+    df = pd.read_csv(vinc_logs_path / filename)
+    df = df[df["ensembling"] == ensembling]
 
-    max_value = df["acc_estimate"].max()
-    max_value_rows = df[df["acc_estimate"] == max_value]
+    max_value = df[metric].max()
+    max_value_rows = df[df[metric] == max_value]
 
-    results = []
-    for _, row in max_value_rows.iterrows():
-        entry = row[["layer", "ensembling"]].to_dict()
-        entry["value"] = row["acc_estimate"]
-        results.append(entry)
-
-    layer = results[-1]["layer"] # best layer
+    layer = max_value_rows["layer"].values[-1] # best layer
+    print(f"{layer=}")
 
     # The reporter path
-    reporter_path = vinc_logs_path / "reporters" / f"layer_{layer}.pt"
+    folder_name = "lr_models" if supervised else "reporters"
+    probe_path = vinc_logs_path / folder_name / f"layer_{layer}.pt"
 
-    return reporter_path, layer
+    # Load the probe
+    print(f"Loading the probe from {probe_path}")
+    probe = torch.load(probe_path, map_location=current_device)
+
+    if supervised:
+        assert len(probe) == 1
+        probe = probe[0]
+        probe.eval()
+        probe.requires_grad_(False)
+
+        if is_bf16_possible:
+            probe = probe.bfloat16()
+    else:
+        probe.bias.requires_grad_(False)
+        probe.scale.requires_grad_(False)
+
+        if is_bf16_possible:
+            probe.weight = probe.weight.bfloat16()
+            probe.bias = probe.bias.bfloat16()
+            probe.scale = probe.scale.bfloat16()
+
+    print("Loaded the probe.\n")
+
+    return probe, layer
 
 
-def get_reward_model(output_path, current_device):
+def get_reward_model(
+        output_path, current_device,
+        **probe_kwargs,
+    ):
     print(f"The current device is {current_device}.\n")
 
     # Cast to Path
@@ -127,7 +158,7 @@ def get_reward_model(output_path, current_device):
     language_reward_model_name = get_model_name(output_path)
     print(f"Loading reward model from {language_reward_model_name}.")
     # Check the dtype to load in
-    kwargs = get_model_loading_kwargs(language_reward_model_name)
+    kwargs, is_bf16_possible = get_model_loading_kwargs(language_reward_model_name)
 
     # Load the language reward model
     # TODO: maybe make this more general to support other model classes
@@ -141,14 +172,12 @@ def get_reward_model(output_path, current_device):
     print(f"Reward model dtype: {model.lm_head.weight.dtype}\n")
 
     # Get the reporter path
-    reporter_path, layer = get_reporter_path(output_path)
-    # Load the reporter
-    print(f"Loading reporter from {reporter_path}")
-    reporter = Reporter.load(reporter_path).to(current_device)
-    reporter.eval()
-    print("Loaded reporter.\n")
+    probe, layer = get_probe(
+        output_path, current_device,
+        is_bf16_possible=is_bf16_possible, **probe_kwargs
+    )
 
-    return MyRewardModel(model, reporter, layer=layer), language_reward_model_name
+    return MyRewardModel(model, probe, layer=layer), language_reward_model_name
 
 
 # Idea borrowed from: https://github.com/CarperAI/trlx/blob/main/examples/hh/ppo_hh.py
@@ -195,10 +224,14 @@ def create_reward_fn(
 
         text_dataset = Dataset.from_dict({ "text": texts })
 
-        processed_dataset = text_dataset.map(
-            preprocess_function, batched=False,
-            remove_columns=text_dataset.column_names,
-        )
+        try:
+            processed_dataset = text_dataset.map(
+                preprocess_function, batched=False,
+                remove_columns=text_dataset.column_names,
+            )
+        except ValueError:
+            print(text_dataset["text"])
+            return torch.zeros(len(texts)).to(device)
 
         # Get max length
         max_length = max([len(item) for item in processed_dataset["pos_input_ids"]])

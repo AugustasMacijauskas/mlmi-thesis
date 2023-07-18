@@ -28,7 +28,7 @@ def get_model_with_lora(config, current_device):
 def get_model(model_name, current_device):
     print("Loading policy model...\n")
 
-    kwargs = get_model_loading_kwargs(model_name)
+    kwargs, _ = get_model_loading_kwargs(model_name)
     model = AutoModelForCausalLMWithValueHead.from_pretrained(
         model_name,
         # load_in_8bit=True,

@@ -5,8 +5,8 @@ import re
 
 
 COLUMNS_TO_EXTRACT_DICT = {
-    "acc_estimate": "Accuracy",
     "auroc_estimate": "AUROC",
+    "acc_estimate": "Accuracy",
     "cal_acc_estimate": "Calibrated accuracy",
 }
 RESULTS_TO_EXTRACT = ["eval", "lr_eval", "lm_eval"]
@@ -14,7 +14,11 @@ RESULTS_TO_EXTRACT = ["eval", "lr_eval", "lm_eval"]
 
 def get_last_line(file_path):
     with open(file_path, 'r') as file:
-        last_line = file.readlines()[-1].strip()
+        lines = [line.strip() for line in file.readlines()]
+    
+    last_line = [line for line in lines if line.startswith("Output directory at")]
+    assert len(last_line) == 1
+    last_line = last_line[0]
     
     last_line = last_line.split(" ")[-1][4:-4]
 
@@ -23,6 +27,7 @@ def get_last_line(file_path):
 
 def get_max_values_for_column(csv_file, column):
     df = pd.read_csv(csv_file)
+    df = df[df["ensembling"] == "partial"]
 
     max_value = df[column].max()
     max_value_rows = df[df[column] == max_value]
@@ -60,20 +65,20 @@ def dict_to_markdown(outputs):
                 ret += " |\n\n"
 
     ret += "\n"
-    ret += "# Accuracy\n\n"
+    ret += "# AUROC\n\n"
     ret += "| Layer | Ensembling | Value |\n"
     ret += "| --- | --- | --- |\n"
-    for entry in outputs["Accuracy"]["eval"]:
-        formatted_value = f"{entry['value'] * 100:.2f}%"
+    for entry in outputs["AUROC"]["eval"]:
+        formatted_value = f"{entry['value']:.4f}"
         ret += f"| {entry['layer']} | {entry['ensembling']} | {formatted_value} |\n"
     
-    ret += "\n"
-    ret += "# Calibrated accuracy\n\n"
-    ret += "| Layer | Ensembling | Value |\n"
-    ret += "| --- | --- | --- |\n"
-    for entry in outputs["Calibrated accuracy"]["eval"]:
-        formatted_value = f"{entry['value'] * 100:.2f}%"
-        ret += f"| {entry['layer']} | {entry['ensembling']} | {formatted_value} |\n"
+    # ret += "\n"
+    # ret += "# Calibrated accuracy\n\n"
+    # ret += "| Layer | Ensembling | Value |\n"
+    # ret += "| --- | --- | --- |\n"
+    # for entry in outputs["Calibrated accuracy"]["eval"]:
+    #     formatted_value = f"{entry['value'] * 100:.2f}%"
+    #     ret += f"| {entry['layer']} | {entry['ensembling']} | {formatted_value} |\n"
 
     ret += "\n"
     ret += "# -------------------------------------\n"

@@ -53,9 +53,10 @@ echo "Total number of GPUs: $total_num_gpus"
 echo "Number of GPUs for PPO: $ppo_gpus"
 
 # Reward model stuff
-reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_v4_all_20230629_120158_21789"
+# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_v4_all_20230629_120158_21789"
 # reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-11b-1363200_custom_data_imdb_v2_first_20230705_144420_27570"
 # reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_imdb_v2_first_20230707_170052_28991"
+reward_model_output_path="/fsx/home-augustas/logs/UQA-3b-custom_data_imdb_v2_final_20230717_200713_36998"
 echo "Reward model output path: $reward_model_output_path"
 
 # Dataset stuff

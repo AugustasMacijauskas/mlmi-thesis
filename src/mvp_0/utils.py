@@ -41,9 +41,10 @@ def get_model_loading_kwargs(model_name):
     is_bf16_possible = (bf16_weights or fp32_weights) and torch.cuda.is_bf16_supported()
     print(f"{is_bf16_possible=}")
     
-    return {
+    model_loading_kwargs = {
         "torch_dtype": torch.bfloat16 if is_bf16_possible else torch.float32
     }
+    return model_loading_kwargs, is_bf16_possible
 
 
 def main():

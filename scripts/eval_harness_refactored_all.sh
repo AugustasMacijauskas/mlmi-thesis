@@ -56,13 +56,14 @@ echo "Current directory: `pwd`"
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
 # keyword="gpt2-xl_rlhfed_imdb_openllm"
-keyword="gpt2-xl_test_updates"
+# keyword="gpt2-xl_test_updates"
 # keyword="gpt2-xl"
 # keyword="gpt2-xl_rlhfed"
 # keyword="gpt2-xl_rlhfed_short"
 # keyword="gpt2-xl_rlhfed_long"
 # keyword="gpt2-xl_imdb_rlhfed"
 save_path="logs_eval_burns/${keyword}_${now}_${JOBID}"
+
 cd ..
 mkdir $save_path
 mkdir "$save_path/outputs_burns"
@@ -73,7 +74,7 @@ cd $workdir
 # ----------------------------------------
 # Model
 # ----------------------------------------
-# model="gpt2-xl"
+model="gpt2-xl"
 
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_custom_data_v4_20230703_211833_26655/checkpoints/model_step_3"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_custom_data_v4_20230704_091318_26861/checkpoints/model_step_6"
@@ -82,7 +83,7 @@ cd $workdir
 
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230707_174421_29011/checkpoints/model_step_6"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230707_234807_29238/checkpoints/model_step_5"
-model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230708_234722_29602/checkpoints/model_step_10"
+# model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230708_234722_29602/checkpoints/model_step_10"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230710_073009_30249/checkpoints/model_step_6"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230710_073009_30249/checkpoints/model_step_12"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_20230710_111607_30508/checkpoints/model_step_6"
@@ -95,10 +96,11 @@ echo "Model: $model"
 # ----------------------------------------
 # burns_tasks="ag_news_binarized,boolq,copa,imdb,qnli_custom,rte_custom,dbpedia_14_binarized,amazon_polarity"
 # burns_tasks="ag_news_binarized,dbpedia_14_binarized"
-burns_tasks="dbpedia_14_binarized"
+burns_tasks="boolq,imdb,dbpedia_14_binarized"
+# burns_tasks=""
 echo "Burns tasks: $burns_tasks"
 
-open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"
+# open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"
 open_llm_leaderboard_tasks=""
 echo -e "Open LLM leaderboard tasks: $open_llm_leaderboard_tasks\n"
 
@@ -107,13 +109,13 @@ echo -e "Open LLM leaderboard tasks: $open_llm_leaderboard_tasks\n"
 # Batch sizes - a lookup table
 # ----------------------------------------
 declare -A batch_sizes
-batch_sizes["amazon_polarity"]="32"
+batch_sizes["amazon_polarity"]="64"
 batch_sizes["ag_news_binarized"]="32"
-batch_sizes["boolq"]="32"
+batch_sizes["boolq"]="16"
 batch_sizes["copa"]="32"
 batch_sizes["dbpedia_14"]="32"
-batch_sizes["dbpedia_14_binarized"]="32"
-batch_sizes["imdb"]="32"
+batch_sizes["dbpedia_14_binarized"]="16"
+batch_sizes["imdb"]="16"
 batch_sizes["qnli_custom"]="32"
 batch_sizes["rte_custom"]="16"
 batch_sizes["arc_challenge"]="16"
