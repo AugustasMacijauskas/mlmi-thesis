@@ -21,6 +21,8 @@ class ScriptArguments:
 
     dataset_name: Optional[str] = field(default="", metadata={"help": "the dataset name"})
     remove_unused_columns: Optional[bool] = field(default=True, metadata={"help": "whether to remove unused columns"})
+
+    template_path: Optional[str] = field(default="AugustasM/burns-datasets-VINC", metadata={ "help": "the template path" })
     
     log_with: Optional[str] = field(default=None, metadata={"help": "use 'wandb'/'tensorboard'"})
     logging_dir: Optional[str] = field(default=None, metadata={"help": "the logging directory used if 'log_with' is set to 'ensorboard'"})
