@@ -1,16 +1,14 @@
 import json
-import math
 import os
 import sys
-from itertools import islice
 
-import numpy as np
 import torch
-from datasets import load_dataset
-from huggingface_hub import snapshot_download
-from torch import nn
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
+import datasets
+datasets.disable_progress_bar() # Don't show progress datasets bars
+
+from pathlib import Path
+sys.path.insert(0, str(Path("/fsx/home-augustas/trlx/").resolve()))
 import trlx
 from trlx.data.default_configs import (
     ModelConfig,
@@ -22,156 +20,96 @@ from trlx.data.default_configs import (
     TRLConfig,
 )
 
+from model import get_model_trlx
+from dataset import get_dataset_trlx
+from reward_model import get_template, get_reward_model, create_reward_fn_trlx
+from utils import get_tokenizer
+
+
 default_config = TRLConfig(
     train=TrainConfig(
         seq_length=1024,
         epochs=10000,
         total_steps=10000,
-        batch_size=4,
+        batch_size=8,
+        minibatch_size=None,
+        tracker="tensorboard",
+        logging_dir="/fsx/home-augustas/logs_trlx",
         checkpoint_interval=10000,
-        eval_interval=500,
-        pipeline="PromptPipeline",
-        trainer="AcceleratePPOTrainer",
         checkpoint_dir="checkpoints/ppo_hh",
+        eval_interval=500,
+        pipeline="PromptPipeline", # data pipeline
+        trainer="AcceleratePPOTrainer",
     ),
-    model=ModelConfig(model_path="EleutherAI/gpt-j-6B", num_layers_unfrozen=2),
-    tokenizer=TokenizerConfig(tokenizer_path="EleutherAI/gpt-j-6B", truncation_side="left"),
-    optimizer=OptimizerConfig(name="adamw", kwargs=dict(lr=8e-6, betas=(0.9, 0.95), eps=1.0e-8, weight_decay=1.0e-6)),
+    model=ModelConfig(model_path="gpt2-xl"),
+    tokenizer=TokenizerConfig(tokenizer_path="gpt2-xl", truncation_side="left"),
+    # optimizer=OptimizerConfig(name="adamw", kwargs=dict(lr=1e-5, betas=(0.9, 0.95), eps=1.0e-8, weight_decay=1.0e-6)),
+    optimizer=OptimizerConfig(name="adam", kwargs=dict(lr=1e-5, betas=(0.9, 0.999), eps=1e-8)),
     scheduler=SchedulerConfig(name="cosine_annealing", kwargs=dict(T_max=10000, eta_min=8e-6)),
     method=PPOConfig(
         name="PPOConfig",
         num_rollouts=64,
-        chunk_size=16,
+        chunk_size=8,
         ppo_epochs=4,
-        init_kl_coef=0.05,
+        # init_kl_coef=0.05,
+        init_kl_coef=0.2,
         target=6,
         horizon=10000,
         gamma=1,
         lam=0.95,
         cliprange=0.2,
         cliprange_value=0.2,
-        vf_coef=1,
+        # vf_coef=1,
+        vf_coef=0.1,
         scale_reward="running",
         ref_mean=None,
         ref_std=None,
         cliprange_reward=10,
-        gen_kwargs=dict(
-            max_new_tokens=128,
-            top_k=0,
-            top_p=1.0,
-            do_sample=True,
-        ),
+        # gen_kwargs=dict(
+        #     max_new_tokens=128,
+        #     top_k=0,
+        #     top_p=1.0,
+        #     do_sample=True,
+        # ),
+        gen_kwargs ={
+            "top_k": 0,
+            "top_p": 1.0,
+            "do_sample": True,
+            "pad_token_id": 50256, # equals to eos_token_id
+            "eos_token_id": 100_000, # why is this value like this?
+            # "pad_to_multiple_of": 8, # TODO: double-check, but this seems to work and to be faster
+            "max_new_tokens": 1,
+        },
     ),
 )
 
 
-config_name = os.environ.get("CONFIG_NAME")
-if config_name == "125M":
-    default_config.train.batch_size = 32
-    default_config.train.total_steps = 1500
-    default_config.train.checkpoint_dir = "checkpoints/ppo_hh_125M"
-    default_config.model.model_path = "Dahoas/pythia-125M-static-sft"
-    default_config.tokenizer.tokenizer_path = "EleutherAI/gpt-neox-20b"
-    default_config.method.num_rollouts = 128
-elif config_name == "1B":
-    default_config.train.batch_size = 8
-    default_config.train.total_steps = 2500
-    default_config.optimizer.kwargs["lr"] = 6e-6
-    default_config.scheduler.kwargs["eta_min"] = 6e-6
-    default_config.train.checkpoint_dir = "checkpoints/ppo_hh_1B"
-    default_config.model.model_path = "Dahoas/pythia-1B-static-sft"
-    default_config.tokenizer.tokenizer_path = "EleutherAI/gpt-neox-20b"
-    default_config.method.chunk_size = 16
-elif config_name == "6B":
-    default_config.train.batch_size = 4
-    default_config.train.seq_length = 512
-    default_config.train.total_steps = 6000
-    default_config.train.checkpoint_dir = "checkpoints/ppo_hh_6B"
-    default_config.model.model_path = "Dahoas/pythia-6B-static-sft"
-    default_config.tokenizer.tokenizer_path = "EleutherAI/gpt-neox-20b"
-    default_config.method.chunk_size = 16
-elif config_name == "20B":
-    default_config.train.seq_length = 512
-    default_config.train.batch_size = 1
-    default_config.train.total_steps = 8000
-    default_config.optimizer.kwargs["lr"] = 1e-6
-    default_config.scheduler.kwargs["eta_min"] = 1e-6
-    default_config.train.checkpoint_dir = "checkpoints/ppo_hh_20B"
-    default_config.model.model_path = "EleutherAI/gpt-neox-20b"
-    default_config.tokenizer.tokenizer_path = "EleutherAI/gpt-neox-20b"
-    default_config.method.num_rollouts = 16
-    default_config.method.chunk_size = 4
-    default_config.method.ppo_epochs = 2
+def get_reward_function(
+        reward_model_output_path, template,
+        rm_batch_size=96, delta_reward=False
+    ):
 
+    if not os.environ.get("RANK", "0") == "0":
+        return True
 
-def create_reward_fn():  # noqa:  C901
-    reward_tokenizer = AutoTokenizer.from_pretrained("gpt2")
-    reward_tokenizer.pad_token = reward_tokenizer.eos_token
-    reward_tokenizer.truncation_side = "left"
+    # Reward model will be on the last device
+    reward_device = torch.cuda.device_count() - 1
+    reward_device = torch.device(f"cuda:{reward_device}")
 
-    if os.environ.get("RANK", "0") == "0":
+    # Get the reward model
+    reward_model, reward_model_name = get_reward_model(
+        reward_model_output_path, reward_device,
+        supervised=True,
+    )
+    reward_model_tokenizer = get_tokenizer(reward_model_name)
 
-        class RewardModel(nn.Module):
-            def __init__(self, checkpoint_path, eos_token_id):
-                super().__init__()
-                model = AutoModelForCausalLM.from_pretrained(checkpoint_path)
-                self.transformer = model.transformer
-                self.v_head = nn.Linear(model.config.n_embd, 1, bias=False)
-                self.eos_token_id = eos_token_id
-
-            def forward(self, input_ids):
-                states = self.transformer(input_ids)[0]
-                rewards = self.v_head(states).squeeze(-1)
-                ends = torch.argmax((input_ids == self.eos_token_id).float(), dim=1).view(-1, 1)
-                returns = torch.gather(rewards, 1, ends).squeeze(-1)
-                return returns
-
-        reward_model = RewardModel("EleutherAI/gpt-j-6B", reward_tokenizer.eos_token_id)
-        directory = snapshot_download("Dahoas/gptj-rm-static", revision="676bfd4d")
-        for fpath in os.listdir(directory):
-            if fpath.endswith(".pt") or fpath.endswith(".bin"):
-                checkpoint = os.path.join(directory, fpath)
-                break
-
-        reward_model.load_state_dict(torch.load(checkpoint))
-        reward_model.eval()
-        reward_model.requires_grad_(False)
-        reward_device = torch.cuda.device_count() - 1
-        reward_model = reward_model.half().to(reward_device)
-        reward_batch_size = 48
-        delta_reward = True
-
-        def get_reward(samples):
-            input = reward_tokenizer(
-                samples,
-                padding=True,
-                truncation=True,
-                max_length=reward_tokenizer.max_len_single_sentence,
-                return_tensors="pt",
-            ).to(reward_device)
-
-            mbs = reward_batch_size
-            out = []
-            for i in range(math.ceil(len(samples) / mbs)):
-                batch_ixs = slice(i * mbs, (i + 1) * mbs)
-                input_ids = input.input_ids[batch_ixs]
-                rewards = reward_model(input_ids)
-                out.extend(rewards)
-            return torch.hstack(out)
-
-        def reward_fn(samples, prompts, original_output, **kwargs):
-            samples = [s + reward_tokenizer.eos_token for s in samples]
-            rewards = get_reward(samples)
-
-            if not delta_reward:
-                return rewards
-
-            original_samples = [p + o + reward_tokenizer.eos_token for p, o in zip(prompts, original_output)]
-            original_rewards = get_reward(original_samples)
-            return rewards - original_rewards
-
-    else:
-        reward_fn = True
+    # Create the reward function
+    reward_fn = create_reward_fn_trlx(
+        reward_model, reward_model_tokenizer,
+        rm_batch_size,
+        template, reward_device,
+        delta_reward=delta_reward,
+    )
 
     return reward_fn
 
@@ -180,14 +118,45 @@ def main(hparams=None):
     if hparams is None:
         hparams = {}
 
+    # device = os.environ.get("RANK")
+    # device = torch.device(f"cuda:{device}")
+    # print(f"{device=}")
+    # model = get_model_trlx("gpt2-xl", device)
+    # hparams = { "model": { "model_path": model } }
+
     config = TRLConfig.update(default_config, hparams)
 
-    dataset = load_dataset("Dahoas/rm-static")
-    prompts = [{"prompt": x["prompt"], "original_output": x["chosen"]} for x in dataset["train"]]
-    # TODO: think about how to get the eval prompts
-    eval_prompts = [{"prompt": x["prompt"], "original_output": x["chosen"]} for x in islice(dataset["test"], 280)]
-    reward_fn = create_reward_fn()
+    # Dataset
+    dataset_dict = get_dataset_trlx(
+        dataset_name="AugustasM/burns-datasets-VINC-imdb-ppo-training-v2",
+        train_dataset_size=8192,
+        eval_dataset_size=512,
+    )
+    prompts = dataset_dict["train"].to_list()
+    eval_prompts = dataset_dict["eval"].to_list()
+    print(f"{len(prompts)=}")
+    print(f"{len(eval_prompts)=}")
 
+
+    # Dataset templates
+    dataset_template_path = "AugustasM/burns-datasets-VINC"
+    template = get_template(dataset_template_path)
+
+
+    # Create reward function
+    reward_model_output_path = "/fsx/home-augustas/logs/UQA-3b-custom_data_imdb_v2_final_20230717_200713_36998"
+    # reward_model_output_path = "/fsx/home-augustas/logs/UQA-11b-custom_data_imdb_v2_final_20230718_172607_37534"
+
+    rm_batch_size = 64 if "3b" in reward_model_output_path else 16
+    reward_fn = get_reward_function(
+        reward_model_output_path=reward_model_output_path,
+        template=template,
+        rm_batch_size=rm_batch_size,
+        delta_reward=False,
+    )
+
+
+    # Train
     trlx.train(
         prompts=prompts,
         eval_prompts=eval_prompts,

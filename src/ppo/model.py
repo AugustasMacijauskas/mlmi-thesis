@@ -1,6 +1,9 @@
 from peft import LoraConfig
 
-from trl import AutoModelForCausalLMWithValueHead
+try:
+    from trl import AutoModelForCausalLMWithValueHead
+except ModuleNotFoundError:
+    from transformers import AutoModelForCausalLM
 
 from utils import get_model_loading_kwargs
 
@@ -25,14 +28,31 @@ def get_model_with_lora(config, current_device):
     return model
 
 
-def get_model(model_name, current_device):
+def get_model(model_name, current_device, **kwargs):
+    print("Loading policy model...\n")
+
+    kwargs, _ = get_model_loading_kwargs(model_name, **kwargs)
+    print(f"{kwargs=}")
+    model = AutoModelForCausalLMWithValueHead.from_pretrained(
+        model_name,
+        device_map={ "": current_device },
+        **kwargs,
+    )
+
+    print(f"Loaded subject model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
+    print(f"Model dtype: {next(iter(model.parameters())).dtype}\n")
+
+    return model
+
+
+def get_model_trlx(model_name, device):
     print("Loading policy model...\n")
 
     kwargs, _ = get_model_loading_kwargs(model_name)
-    model = AutoModelForCausalLMWithValueHead.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         model_name,
         # load_in_8bit=True,
-        device_map={ "": current_device },
+        device_map={ "": device },
         **kwargs,
     )
 

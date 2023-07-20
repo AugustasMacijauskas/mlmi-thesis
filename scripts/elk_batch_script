@@ -54,10 +54,9 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-# template_number="4"
-version="v2"
+version="v3"
 # keyword="UQA-3b-custom_data_imdb_${version}_single_new_$template_number"
-keyword="UQA-3b-custom_data_imdb_${version}_final"
+keyword="UQA-varied-custom_data_imdb_${version}"
 
 save_path="logs/${keyword}_${now}_${JOBID}"
 cd ..
@@ -69,8 +68,11 @@ cd $workdir
 # Model
 # ----------------------------------------
 # model="gpt2-xl"
-model="allenai/unifiedqa-v2-t5-3b-1363200"
-# model="allenai/unifiedqa-v2-t5-11b-1363200"
+# model="allenai/unifiedqa-v2-t5-small-1363200"
+# model="allenai/unifiedqa-v2-t5-base-1363200"
+# model="allenai/unifiedqa-v2-t5-large-1363200"
+# model="allenai/unifiedqa-v2-t5-3b-1363200"
+model="allenai/unifiedqa-v2-t5-11b-1363200"
 echo "Model: $model"
 
 
@@ -89,7 +91,6 @@ echo "Dataset: $dataset"
 template_path="AugustasM/burns-datasets-VINC"
 # template_path="AugustasM/burns-datasets-VINC/first"
 # template_path="AugustasM/burns-datasets-VINC/all"
-# template_path="reaganjlee/truthful_qa_mc"
 echo -e "Template path: $template_path\n"
 
 

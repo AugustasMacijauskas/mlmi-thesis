@@ -1,6 +1,6 @@
 import torch
 
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
 
 
 def preprocess_dataset(
@@ -104,6 +104,43 @@ def get_dataset(dataset_name, tokenizer, num_proc=12, subsets_to_delete=None):
     print("Processing finished.\n")
 
     return processed_dataset, prompt_max_len, response_max_len
+
+
+def get_dataset_trlx(dataset_name, eval_dataset_size, train_dataset_size=8192, subsets_to_delete=None):
+    print("Loading dataset...\n")
+
+    dataset = load_dataset(dataset_name, split="train")
+
+    # Delete certain subsets if desired
+    if subsets_to_delete is not None:
+        for subset in subsets_to_delete:
+            print(f"Deleting subset: {subset}")
+            dataset = dataset.filter(lambda x: x["original_dataset"] != subset)
+
+    # Remove redundant columns
+    dataset = dataset.rename_column("best_response", "original_output")
+    
+    original_column_names = dataset.column_names # will be removed later
+    original_column_names.remove("prompt") # but want to keep the prompt
+    original_column_names.remove("original_output") # and want to keep the prompt
+
+    dataset = dataset.remove_columns(original_column_names)
+    print(f"Remaining columns: {dataset.column_names}\n")
+
+    # Shuffle and sample first n examples
+    train_dataset = dataset.shuffle(seed=42).select(range(train_dataset_size))
+    eval_dataset = dataset.shuffle(seed=42).select(range(train_dataset_size, train_dataset_size + eval_dataset_size))
+
+    processed_dataset = DatasetDict({"train": train_dataset, "eval": eval_dataset})
+
+    # Set format
+
+    print(f"Total number of train examples: {len(processed_dataset['train'])}\n")
+    print(f"Total number of eval examples: {len(processed_dataset['eval'])}\n")
+    
+    print("Processing finished.\n")
+
+    return processed_dataset
 
 
 def main():

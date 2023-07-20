@@ -55,12 +55,6 @@ echo "Running on master node: `hostname`"
 echo "Current directory: `pwd`"
 
 
-# ----------------------------------------
-# Model
-# ----------------------------------------
-model="gpt2-xl"
-echo "Model: $model"
-
 
 # ----------------------------------------
 # Save path
@@ -72,34 +66,9 @@ keyword="${model}_unifiedqa_3b_imdb"
 
 cd ..
 save_path_stem="${keyword}_${now}_${JOBID}"
-save_path="ppo_logs/$save_path_stem"
+save_path="ppo_logs_trlx/$save_path_stem"
 mkdir $save_path
 cd $workdir
-
-
-# ----------------------------------------
-# Reward model
-# ----------------------------------------
-# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_v4_all_20230629_120158_21789"
-# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-11b-1363200_custom_data_imdb_v2_first_20230705_144420_27570"
-# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_imdb_v2_first_20230707_170052_28991"
-reward_model_output_path="/fsx/home-augustas/logs/UQA-3b-custom_data_imdb_v2_final_20230717_200713_36998"
-echo "Reward model output path: $reward_model_output_path"
-
-
-# ----------------------------------------
-# Dataset
-# ----------------------------------------
-# dataset="AugustasM/burns-datasets-VINC-ppo-training-v3"
-# dataset="AugustasM/burns-datasets-VINC-ppo-training-v4"
-dataset="AugustasM/burns-datasets-VINC-imdb-ppo-training-v2"
-echo -e "Dataset: $dataset\n"
-
-
-# ----------------------------------------
-# Template path
-# ----------------------------------------
-template_path="AugustasM/burns-datasets-VINC"
 
 
 # ----------------------------------------
@@ -107,33 +76,11 @@ template_path="AugustasM/burns-datasets-VINC"
 # ----------------------------------------
 application="accelerate"
 
-options="launch --multi_gpu --num_machines=1 --num_processes=$total_num_gpus \
+    # --config_file /fsx/home-augustas/mlmi-thesis/scripts/configs/zero2-bf16.yaml \
+options="launch --multi_gpu --num_machines=1 --num_processes=$ppo_gpus \
+    --config_file scripts/configs/zero2-bf16.yaml \
     --mixed_precision=no --dynamo_backend=no \
-    src/ppo/ppo_training.py \
-    --model_name=$model \
-    --tokenizer_name=$model \
-    --reward_model_output_path=$reward_model_output_path \
-    --dataset_name=$dataset \
-    --template_path=$template_path \
-    --remove_unused_columns=False \
-    --log_with=tensorboard \
-    --logging_dir=/fsx/home-augustas/$save_path/ \
-    --learning_rate=1e-5 \
-    --batch_size=32 \
-    --rm_batch_size=64 \
-    --generator_batch_size=4 \
-    --ppo_batch_size=1 \
-    --gradient_accumulation_steps=1 \
-    --steps=384 \
-    --ppo_epochs=4 \
-    --early_stopping=True \
-    --reward_baseline=0.0 \
-    --target_kl=0.1 \
-    --init_kl_coef=0.2 \
-    --adap_kl_ctrl=True \
-    --seed=0 \
-    --save_freq=4 \
-    --output_dir=/fsx/home-augustas/$save_path/checkpoints/model_ \
+    src/ppo/ppo_training_advanced.py \
 "
 
 out_file_path="../$save_path/out.$JOBID"

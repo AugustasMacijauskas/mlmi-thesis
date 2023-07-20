@@ -6,21 +6,6 @@ from transformers import (
     AutoConfig,
 )
 
-from pathlib import Path
-import sys
-ELK_PATH = Path("/fsx/home-augustas/elk/")
-modules = [
-    ELK_PATH,
-    ELK_PATH / "elk" / "promptsource",
-]
-for module in modules:
-    if not str(module) in sys.path:
-        sys.path.insert(0, str(module.resolve()))
-
-print(sys.path[:2])
-
-from templates import DatasetTemplates
-
 
 def get_tokenizer(model_str: str, **kwargs) -> PreTrainedTokenizerBase:
     print(f"Loading tokenizer {model_str}...")
@@ -48,30 +33,23 @@ def get_tokenizer(model_str: str, **kwargs) -> PreTrainedTokenizerBase:
     return tokenizer
 
 
-def get_model_loading_kwargs(model_name):
+def get_model_loading_kwargs(model_name, **kwargs):
     model_cfg = AutoConfig.from_pretrained(model_name)
-
-    bf16_weights = model_cfg.torch_dtype == torch.bfloat16
     fp32_weights = model_cfg.torch_dtype in (None, torch.float32)
+    bf16_weights = model_cfg.torch_dtype == torch.bfloat16
     is_bf16_possible = (bf16_weights or fp32_weights) and torch.cuda.is_bf16_supported()
     print(f"{is_bf16_possible=}")
+
+    if kwargs.get("load_in_8bit") and not fp32_weights:
+        kwargs["torch_dtype"] = None
     
-    model_loading_kwargs = {
-        "torch_dtype": torch.bfloat16 if is_bf16_possible else torch.float32
-    }
-    return model_loading_kwargs, is_bf16_possible
-
-
-def get_template(dataset_template_path):
-    dataset_templates = DatasetTemplates(dataset_template_path)
-    dataset_templates.templates = {
-        x.name: x for x in dataset_templates.templates.values()
-    }
-    print(f"Num templates: {len(dataset_templates.templates)}")
-    template = list(dataset_templates.templates.values())[0]
-    print(f"{template.name}")
-
-    return template
+    elif is_bf16_possible:
+        kwargs["torch_dtype"] = torch.bfloat16
+    
+    else:
+        kwargs["torch_dtype"] = "auto"
+    
+    return kwargs, is_bf16_possible
 
 
 def main():

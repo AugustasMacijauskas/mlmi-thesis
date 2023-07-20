@@ -11,19 +11,32 @@ from transformers import T5ForConditionalGeneration
 
 from utils import get_model_loading_kwargs
 
-# # Add local dependencies to PATH
-# import sys
-# ELK_PATH = Path("/fsx/home-augustas/elk/")
-# modules = [
-#     ELK_PATH,
-#     ELK_PATH / "elk" / "training",
-# ]
-# for module in modules:
-#     if not str(module) in sys.path:
-#         sys.path.insert(0, str(module.resolve()))
+from pathlib import Path
+import sys
+ELK_PATH = Path("/fsx/home-augustas/elk/")
+modules = [
+    ELK_PATH,
+    ELK_PATH / "elk" / "promptsource",
+]
+for module in modules:
+    if not str(module) in sys.path:
+        sys.path.insert(0, str(module.resolve()))
 
-# # Should now be possible to load the local modules
-# from reporter import Reporter
+print(sys.path[:2])
+
+from templates import DatasetTemplates
+
+
+def get_template(dataset_template_path):
+    dataset_templates = DatasetTemplates(dataset_template_path)
+    dataset_templates.templates = {
+        x.name: x for x in dataset_templates.templates.values()
+    }
+    print(f"Num templates: {len(dataset_templates.templates)}")
+    template = list(dataset_templates.templates.values())[0]
+    print(f"{template.name}")
+
+    return template
 
 
 class MyRewardModel(nn.Module):
@@ -192,46 +205,48 @@ def create_reward_fn(
             add_special_tokens=True, return_tensors="pt",
         )
     
-    def preprocess_function(text):
-        entry = { "text": text }
-
-        # Get the positive and negative examples
-        entry["label"] = 1
-        pos_q, pos_a = template.apply(entry)
-
-        entry["label"] = 0
-        neg_q, neg_a = template.apply(entry)
-
-        # Tokenize the inputs
-        pos_inputs = tokenization_function(pos_q, pos_a)
-        neg_inputs = tokenization_function(neg_q, neg_a)
-
-        return {
-            "pos_input_ids": pos_inputs["input_ids"].squeeze(),
-            "pos_attention_mask": pos_inputs["attention_mask"].squeeze(),
-            "pos_labels": pos_inputs["labels"].squeeze(),
-            "neg_input_ids": neg_inputs["input_ids"].squeeze(),
-            "neg_attention_mask": neg_inputs["attention_mask"].squeeze(),
-            "neg_labels": neg_inputs["labels"].squeeze(),
+    def preprocess_function(examples):
+        # Initialize the output dictionary
+        processed_examples = {
+            "pos_input_ids": [],
+            "pos_attention_mask": [],
+            "pos_labels": [],
+            "neg_input_ids": [],
+            "neg_attention_mask": [],
+            "neg_labels": [],
         }
 
-    
-    def get_rewards(texts):
-        '''
-            args:
-                texts: list of strings - the prompts concatenated with the generations
-        '''
+        for text in examples["text"]:
+            entry = { "text": text }
 
+            # Get the positive and negative examples
+            entry["label"] = 1
+            pos_q, pos_a = template.apply(entry)
+
+            entry["label"] = 0
+            neg_q, neg_a = template.apply(entry)
+
+            # Tokenize the inputs
+            pos_inputs = tokenization_function(pos_q, pos_a)
+            neg_inputs = tokenization_function(neg_q, neg_a)
+
+            # Append the results to the corresponding lists in the output dictionary
+            for key in processed_examples.keys():
+                if key.startswith('pos'):
+                    processed_examples[key].append(pos_inputs[key.replace('pos_', '')].squeeze().tolist())
+                else:
+                    processed_examples[key].append(neg_inputs[key.replace('neg_', '')].squeeze().tolist())
+
+        return processed_examples
+    
+
+    def prepare_batch(texts):
         text_dataset = Dataset.from_dict({ "text": texts })
 
-        try:
-            processed_dataset = text_dataset.map(
-                preprocess_function, batched=False,
-                remove_columns=text_dataset.column_names,
-            )
-        except ValueError:
-            print(text_dataset["text"])
-            return torch.zeros(len(texts)).to(device)
+        processed_dataset = text_dataset.map(
+            preprocess_function, batched=True,
+            remove_columns=text_dataset.column_names,
+        )
 
         # Get max length
         max_length = max([len(item) for item in processed_dataset["pos_input_ids"]])
@@ -258,14 +273,58 @@ def create_reward_fn(
         assert all([item.shape[1] == max_length for item in neg_inputs.values()])
         neg_inputs["labels"] = torch.LongTensor(processed_dataset["neg_labels"]).to(device)
 
-        # Run model
-        # Add batching later if needed
-        with torch.no_grad():
-            predictions = reward_model(pos_inputs, neg_inputs)
+        return pos_inputs, neg_inputs
 
-        return predictions.sigmoid()
+    
+    def get_rewards(texts):
+        '''
+            args:
+                texts: list of strings - the prompts concatenated with the generations
+        '''
+
+        rewards = []
+
+        # Batching
+        for i in range(0, len(texts), rm_batch_size):
+            text_batch = texts[i:i+rm_batch_size]
+            
+            pos_inputs, neg_inputs = prepare_batch(text_batch)
+
+            with torch.no_grad():
+                predictions = reward_model(pos_inputs, neg_inputs)
+
+            rewards.append(predictions.sigmoid())
+        
+        return torch.cat(rewards, dim=0)
     
     return get_rewards
+
+
+def create_reward_fn_trlx(
+        reward_model, reward_model_tokenizer,
+        rm_batch_size,
+        template, device,
+        delta_reward=True,
+    ):
+
+    get_rewards = create_reward_fn(
+        reward_model, reward_model_tokenizer,
+        rm_batch_size,
+        template, device,
+    )
+
+    def reward_fn(samples, prompts, original_output, **kwargs):
+        rewards = get_rewards(samples)
+
+        if not delta_reward:
+            return rewards
+
+        original_samples = [p + o for p, o in zip(prompts, original_output)]
+        original_rewards = get_rewards(original_samples)
+        
+        return rewards - original_rewards
+
+    return reward_fn
 
 
 def main():

@@ -14,10 +14,10 @@ from datetime import datetime
 
 from configs import get_script_args, get_ppo_config
 from dataset import get_dataset, collator
-from reward_model import get_reward_model, create_reward_fn
+from reward_model import get_template, get_reward_model, create_reward_fn
 from model import get_model
 from trainer import train
-from utils import get_tokenizer, get_template
+from utils import get_tokenizer
 
 
 def main():
