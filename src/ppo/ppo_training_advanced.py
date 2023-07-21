@@ -33,7 +33,8 @@ default_config = TRLConfig(
         total_steps=10000,
         batch_size=8,
         minibatch_size=None,
-        tracker="tensorboard",
+        tracker="wandb",
+        project_name="mlmi_thesis",
         logging_dir="/fsx/home-augustas/logs_trlx",
         checkpoint_interval=10000,
         checkpoint_dir="checkpoints/ppo_hh",
@@ -78,7 +79,7 @@ default_config = TRLConfig(
             "pad_token_id": 50256, # equals to eos_token_id
             "eos_token_id": 100_000, # why is this value like this?
             # "pad_to_multiple_of": 8, # TODO: double-check, but this seems to work and to be faster
-            "max_new_tokens": 1,
+            "max_new_tokens": 4,
         },
     ),
 )
@@ -118,11 +119,10 @@ def main(hparams=None):
     if hparams is None:
         hparams = {}
 
-    # device = os.environ.get("RANK")
-    # device = torch.device(f"cuda:{device}")
-    # print(f"{device=}")
-    # model = get_model_trlx("gpt2-xl", device)
-    # hparams = { "model": { "model_path": model } }
+    device = os.environ.get("RANK")
+    device = torch.device(f"cuda:{device}")
+    model = get_model_trlx("gpt2-xl", device)
+    hparams = { "model": { "model_path": model } }
 
     config = TRLConfig.update(default_config, hparams)
 

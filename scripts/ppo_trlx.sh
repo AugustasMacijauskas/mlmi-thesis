@@ -77,6 +77,7 @@ cd $workdir
 application="accelerate"
 
     # --config_file /fsx/home-augustas/mlmi-thesis/scripts/configs/zero2-bf16.yaml \
+# options="launch --num_machines=1 --num_processes=1 \
 options="launch --multi_gpu --num_machines=1 --num_processes=$ppo_gpus \
     --config_file scripts/configs/zero2-bf16.yaml \
     --mixed_precision=no --dynamo_backend=no \
