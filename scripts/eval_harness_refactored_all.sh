@@ -169,11 +169,11 @@ for task in $burns_tasks; do
     batch_size=${batch_sizes[$task]}
 
     options="main.py \
-        --model=hf \
-        --model_args=pretrained=$model \
-        --tasks=$task \
-        --batch_size=$batch_size \
-        --output_path=$output_path \
+        --model hf \
+        --model_args pretrained=$model,load_in_8bit=True \
+        --tasks $task \
+        --batch_size $batch_size \
+        --output_path $output_path \
     "
     out_file_path="../../$save_path/out-$task-$JOBID.out"
     CMD="$application $options > $out_file_path"
