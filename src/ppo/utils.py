@@ -6,9 +6,12 @@ from transformers import (
     AutoConfig,
 )
 
+from accelerate import Accelerator
+temporary_accelerator = Accelerator()
+
 
 def get_tokenizer(model_str: str, **kwargs) -> PreTrainedTokenizerBase:
-    print(f"Loading tokenizer {model_str}...")
+    temporary_accelerator.print(f"Loading tokenizer {model_str}...")
 
     """Instantiate a tokenizer, using the fast one iff it exists."""
     try:
@@ -16,7 +19,7 @@ def get_tokenizer(model_str: str, **kwargs) -> PreTrainedTokenizerBase:
     
     except Exception as e:
         if kwargs.get("verbose", True):
-            print(f"Falling back to slow tokenizer; fast one failed: '{e}'")
+            temporary_accelerator.print(f"Falling back to slow tokenizer; fast one failed: '{e}'")
 
         tokenizer = AutoTokenizer.from_pretrained(model_str, use_fast=False, **kwargs)
 
@@ -28,7 +31,7 @@ def get_tokenizer(model_str: str, **kwargs) -> PreTrainedTokenizerBase:
     if "dolly-v2" in model_str:
         tokenizer.model_max_length = 2048
     
-    print("Loaded tokenizer.\n")
+    temporary_accelerator.print("Loaded tokenizer.\n")
 
     return tokenizer
 
@@ -38,7 +41,7 @@ def get_model_loading_kwargs(model_name, **kwargs):
     fp32_weights = model_cfg.torch_dtype in (None, torch.float32)
     bf16_weights = model_cfg.torch_dtype == torch.bfloat16
     is_bf16_possible = (bf16_weights or fp32_weights) and torch.cuda.is_bf16_supported()
-    print(f"{is_bf16_possible=}")
+    temporary_accelerator.print(f"{is_bf16_possible=}")
 
     if kwargs.get("load_in_8bit") and not fp32_weights:
         kwargs["torch_dtype"] = None

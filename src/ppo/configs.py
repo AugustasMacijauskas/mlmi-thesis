@@ -51,8 +51,9 @@ class ScriptArguments:
     adap_kl_ctrl: Optional[bool] = field(default=True, metadata={"help": "Use adaptive KL control, otherwise linear"})
 
     seed: Optional[int] = field(default=0, metadata={"help": "the seed"})
-    save_freq: Optional[int] = field(default=None, metadata={"help": "n steps to save the model"})
+    save_freq: Optional[int] = field(default=None, metadata={"help": "n epochs to save the model"})
     output_dir: Optional[str] = field(default="../runs_ppo/", metadata={"help": "the directory to save the model to"})
+    log_freq: Optional[int] = field(default=None, metadata={"help": "n batches to log the generated samples"})
 
 
 def get_script_args(local_args=None):
@@ -80,7 +81,9 @@ def get_ppo_config(script_args: ScriptArguments):
         adap_kl_ctrl=script_args.adap_kl_ctrl,
         seed=script_args.seed,
         optimize_cuda_cache=True,
-        project_kwargs={ "logging_dir": script_args.logging_dir },
+        # project_kwargs={ "logging_dir": script_args.logging_dir },
+        tracker_project_name="mlmi-thesis",
+        tracker_kwargs={ "group": "test_runs" },
     )
 
 

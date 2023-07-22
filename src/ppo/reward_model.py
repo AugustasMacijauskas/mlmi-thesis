@@ -22,9 +22,10 @@ for module in modules:
     if not str(module) in sys.path:
         sys.path.insert(0, str(module.resolve()))
 
-print(sys.path[:2])
-
 from templates import DatasetTemplates
+
+from accelerate import Accelerator
+temporary_accelerator = Accelerator()
 
 
 def get_template(dataset_template_path):
@@ -32,9 +33,9 @@ def get_template(dataset_template_path):
     dataset_templates.templates = {
         x.name: x for x in dataset_templates.templates.values()
     }
-    print(f"Num templates: {len(dataset_templates.templates)}")
+    temporary_accelerator.print(f"Num templates: {len(dataset_templates.templates)}")
     template = list(dataset_templates.templates.values())[0]
-    print(f"{template.name}")
+    temporary_accelerator.print(f"{template.name}")
 
     return template
 
@@ -126,14 +127,14 @@ def get_probe(
     max_value_rows = df[df[metric] == max_value]
 
     layer = max_value_rows["layer"].values[-1] # best layer
-    print(f"{layer=}")
+    temporary_accelerator.print(f"{layer=}")
 
     # The reporter path
     folder_name = "lr_models" if supervised else "reporters"
     probe_path = vinc_logs_path / folder_name / f"layer_{layer}.pt"
 
     # Load the probe
-    print(f"Loading the probe from {probe_path}")
+    temporary_accelerator.print(f"Loading the probe from {probe_path}")
     probe = torch.load(probe_path, map_location=current_device)
 
     if supervised:
@@ -153,7 +154,7 @@ def get_probe(
             probe.bias = probe.bias.bfloat16()
             probe.scale = probe.scale.bfloat16()
 
-    print("Loaded the probe.\n")
+    temporary_accelerator.print("Finished loading the probe.\n")
 
     return probe, layer
 
@@ -162,14 +163,14 @@ def get_reward_model(
         output_path, current_device,
         **probe_kwargs,
     ):
-    print(f"The current device is {current_device}.\n")
+    temporary_accelerator.print(f"The current device is {current_device}.\n")
 
     # Cast to Path
     output_path = Path(output_path)
 
     # Get the reward model name
     language_reward_model_name = get_model_name(output_path)
-    print(f"Loading reward model from {language_reward_model_name}.")
+    temporary_accelerator.print(f"Loading reward model from {language_reward_model_name}.")
     # Check the dtype to load in
     kwargs, is_bf16_possible = get_model_loading_kwargs(language_reward_model_name)
 
@@ -180,9 +181,9 @@ def get_reward_model(
     ).to(current_device)
     model.eval()
     model.requires_grad_(False)
-    print(f"Loaded reward model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
-    print(f"Number of trainable params {sum(p.numel() for p in model.parameters() if p.requires_grad):,d} parameters.")
-    print(f"Reward model dtype: {model.lm_head.weight.dtype}\n")
+    temporary_accelerator.print(f"Loaded reward model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
+    temporary_accelerator.print(f"Number of trainable params {sum(p.numel() for p in model.parameters() if p.requires_grad):,d} parameters.")
+    temporary_accelerator.print(f"Reward model dtype: {model.lm_head.weight.dtype}\n")
 
     # Get the reporter path
     probe, layer = get_probe(

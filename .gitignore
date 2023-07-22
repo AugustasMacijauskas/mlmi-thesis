@@ -166,3 +166,4 @@ logs/
 logs_old/
 .ipynb_checkpoints/
 src/dataset_formation/datasets
+wandb/

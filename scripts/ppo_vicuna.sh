@@ -52,14 +52,14 @@ echo "Current directory: `pwd`"
 # ----------------------------------------
 # Model
 # ----------------------------------------
-model="gpt2-xl"
+model="lmsys/vicuna-7b-v1.3"
 echo "Model: $model"
 
 
 # ----------------------------------------
 # Policy tokenizer
 # ----------------------------------------
-tokenizer="gpt2-xl"
+tokenizer="huggyllama/llama-7b"
 echo "Tokenizer: $tokenizer"
 
 
@@ -67,9 +67,7 @@ echo "Tokenizer: $tokenizer"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-model="gpt2-xl"
-# keyword="${model}_unifiedqa_3b_custom_data_v4"
-keyword="${model}_unifiedqa_3b_imdb"
+keyword="vicuna_UQA_3b_qnli"
 
 cd ..
 save_path_stem="${keyword}_${now}_${JOBID}"
@@ -81,19 +79,17 @@ cd $workdir
 # ----------------------------------------
 # Reward model
 # ----------------------------------------
-# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_v4_all_20230629_120158_21789"
-# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-11b-1363200_custom_data_imdb_v2_first_20230705_144420_27570"
-# reward_model_output_path="/fsx/home-augustas/logs/unifiedqa-v2-t5-3b-1363200_custom_data_imdb_v2_first_20230707_170052_28991"
-reward_model_output_path="/fsx/home-augustas/logs/UQA-3b-custom_data_imdb_v2_final_20230717_200713_36998"
+
+# ---------------------------------------- QNLI Vicuna ----------------------------------------
+# reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234029_40903" # Large
+reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234034_40904" # 3B
 echo "Reward model output path: $reward_model_output_path"
 
 
 # ----------------------------------------
 # Dataset
 # ----------------------------------------
-# dataset="AugustasM/burns-datasets-VINC-ppo-training-v3"
-# dataset="AugustasM/burns-datasets-VINC-ppo-training-v4"
-dataset="AugustasM/burns-datasets-VINC-imdb-ppo-training-v2"
+dataset="AugustasM/qnli-vicuna-ppo-training-v1"
 echo -e "Dataset: $dataset\n"
 
 
@@ -110,22 +106,22 @@ application="accelerate"
 
 options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --mixed_precision=no --dynamo_backend=no \
-    src/ppo/ppo_training.py \
+    src/ppo/ppo_training_lora.py \
     --model_name=$model \
     --tokenizer_name=$tokenizer \
     --reward_model_output_path=$reward_model_output_path \
     --dataset_name=$dataset \
     --template_path=$template_path \
     --remove_unused_columns=False \
-    --log_with=tensorboard \
+    --log_with=wandb \
     --logging_dir=/fsx/home-augustas/$save_path/ \
-    --learning_rate=1e-5 \
-    --batch_size=32 \
+    --learning_rate=5e-7 \
+    --batch_size=128 \
     --rm_batch_size=64 \
-    --generator_batch_size=4 \
+    --generator_batch_size=16 \
     --ppo_batch_size=1 \
     --gradient_accumulation_steps=1 \
-    --steps=384 \
+    --steps=16 \
     --ppo_epochs=4 \
     --early_stopping=True \
     --reward_baseline=0.0 \
@@ -133,8 +129,9 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --init_kl_coef=0.2 \
     --adap_kl_ctrl=True \
     --seed=0 \
-    --save_freq=4 \
+    --save_freq=2 \
     --output_dir=/fsx/home-augustas/$save_path/checkpoints/model_ \
+    --log_freq=2 \
 "
 
 out_file_path="../$save_path/out.$JOBID"

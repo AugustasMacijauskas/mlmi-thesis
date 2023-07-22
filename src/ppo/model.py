@@ -7,46 +7,48 @@ except ModuleNotFoundError:
 
 from utils import get_model_loading_kwargs
 
+from accelerate import Accelerator
+temporary_accelerator = Accelerator()
 
-def get_model_with_lora(config, current_device):
+
+def get_model_with_lora(model_name, device, lora_config, **kwargs):
     # TODO: add LoRA configuration to the config object and not hard-coded
-    lora_config = LoraConfig(
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.05,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
-    
+    temporary_accelerator.print("Loading policy model...\n")
+
+    temporary_accelerator.print(f"{kwargs=}")
     model = AutoModelForCausalLMWithValueHead.from_pretrained(
-        config.model_name,
+        model_name,
+        device_map={ "": device },
         load_in_8bit=True,
-        device_map={ "": current_device },
         peft_config=lora_config,
+        **kwargs,
     )
+
+    temporary_accelerator.print(f"Loaded subject model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
+    temporary_accelerator.print(f"Model dtype: {next(iter(model.parameters())).dtype}\n")
 
     return model
 
 
 def get_model(model_name, current_device, **kwargs):
-    print("Loading policy model...\n")
+    temporary_accelerator.print("Loading policy model...\n")
 
     kwargs, _ = get_model_loading_kwargs(model_name, **kwargs)
-    print(f"{kwargs=}")
+    temporary_accelerator.print(f"{kwargs=}")
     model = AutoModelForCausalLMWithValueHead.from_pretrained(
         model_name,
         device_map={ "": current_device },
         **kwargs,
     )
 
-    print(f"Loaded subject model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
-    print(f"Model dtype: {next(iter(model.parameters())).dtype}\n")
+    temporary_accelerator.print(f"Loaded subject model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
+    temporary_accelerator.print(f"Model dtype: {next(iter(model.parameters())).dtype}\n")
 
     return model
 
 
 def get_model_trlx(model_name, device):
-    print("Loading policy model...\n")
+    temporary_accelerator.print("Loading policy model...\n")
 
     kwargs, _ = get_model_loading_kwargs(model_name)
     model = AutoModelForCausalLM.from_pretrained(
@@ -56,7 +58,7 @@ def get_model_trlx(model_name, device):
         **kwargs,
     )
 
-    print(f"Loaded subject model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
-    print(f"Model dtype: {next(iter(model.parameters())).dtype}\n")
+    temporary_accelerator.print(f"Loaded subject model with {sum(p.numel() for p in model.parameters()):,d} parameters.")
+    temporary_accelerator.print(f"Model dtype: {next(iter(model.parameters())).dtype}\n")
 
     return model

@@ -1,6 +1,7 @@
-import torch
-
 from datasets import load_dataset, DatasetDict
+
+from accelerate import Accelerator
+temporary_accelerator = Accelerator()
 
 
 def preprocess_dataset(
@@ -106,20 +107,19 @@ def get_dataset(dataset_name, tokenizer, num_proc=12, subsets_to_delete=None):
     return processed_dataset, prompt_max_len, response_max_len
 
 
-def get_dataset_qnli(tokenizer, version="v1", num_proc=12, margin=8):
-    print("Loading dataset...\n")
+def get_dataset_qnli(dataset_name, tokenizer, num_proc=12, margin=8):
+    temporary_accelerator.print("Loading dataset...\n")
 
-    dataset = load_dataset(
-        f"AugustasM/qnli-vicuna-ppo-training-{version}", split="train"
-    )
+    dataset = load_dataset(dataset_name, split="train")
+    dataset = dataset.rename_column("prompt", "query")
     original_column_names = dataset.column_names # will be removed later
-    original_column_names.remove("prompt") # but want to keep the prompt
+    original_column_names.remove("query") # but want to keep the prompt
     original_column_names.remove("best_response") # and want to keep the prompt
 
     # Do not need to truncate for GPT-J 6B or dolly-v2
     # check for other models
     processed_dataset = dataset.map(
-        lambda batch: tokenizer(batch["prompt"]), batched=True, num_proc=num_proc
+        lambda batch: tokenizer(batch["query"]), batched=True, num_proc=num_proc
     )
 
     # Filter too long examples
@@ -135,7 +135,7 @@ def get_dataset_qnli(tokenizer, version="v1", num_proc=12, margin=8):
     processed_dataset = processed_dataset.remove_columns(
         original_column_names + ["token_type_ids"]
     )
-    print(f"Remaining columns: {processed_dataset.column_names}\n")
+    temporary_accelerator.print(f"Remaining columns: {processed_dataset.column_names}\n")
 
     # Shuffle and sample first n examples
     processed_dataset = processed_dataset.shuffle(seed=42).select(range(8192))
@@ -146,9 +146,9 @@ def get_dataset_qnli(tokenizer, version="v1", num_proc=12, margin=8):
         output_all_columns=True
     )
 
-    print(f"Total number of examples: {len(processed_dataset)}\n")
+    temporary_accelerator.print(f"Total number of examples: {len(processed_dataset)}\n")
     
-    print("Data preprocessing finished.\n")
+    temporary_accelerator.print("Data preprocessing finished.\n")
 
     return processed_dataset
 
