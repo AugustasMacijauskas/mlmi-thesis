@@ -20,6 +20,7 @@ dataset_to_result_key = {
     "imdb_burns_2": "acc,none",
     # "qnli": "acc,none",
     "qnli_custom": "acc,none",
+    "qnli_vicuna": "acc,none",
     "rte_custom": "acc,none",
 }
 

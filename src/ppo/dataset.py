@@ -6,7 +6,7 @@ from datasets import load_dataset, DatasetDict
 def preprocess_dataset(
     dataset,
     tokenizer,
-    num_proc=24,
+    num_proc=12,
 ):
     """
     Build dataset for training. This builds the dataset from `load_dataset`, one should
@@ -104,6 +104,53 @@ def get_dataset(dataset_name, tokenizer, num_proc=12, subsets_to_delete=None):
     print("Processing finished.\n")
 
     return processed_dataset, prompt_max_len, response_max_len
+
+
+def get_dataset_qnli(tokenizer, version="v1", num_proc=12, margin=8):
+    print("Loading dataset...\n")
+
+    dataset = load_dataset(
+        f"AugustasM/qnli-vicuna-ppo-training-{version}", split="train"
+    )
+    original_column_names = dataset.column_names # will be removed later
+    original_column_names.remove("prompt") # but want to keep the prompt
+    original_column_names.remove("best_response") # and want to keep the prompt
+
+    # Do not need to truncate for GPT-J 6B or dolly-v2
+    # check for other models
+    processed_dataset = dataset.map(
+        lambda batch: tokenizer(batch["prompt"]), batched=True, num_proc=num_proc
+    )
+
+    # Filter too long examples
+    # Substract a bit more to allow for generations to be processed
+    filter_too_long = lambda batch: [
+        len(x) < tokenizer.model_max_length - margin for x in batch["input_ids"]
+    ]
+    processed_dataset = processed_dataset.filter(
+        filter_too_long, batched=True, num_proc=12
+    )
+
+    # Remove original columns
+    processed_dataset = processed_dataset.remove_columns(
+        original_column_names + ["token_type_ids"]
+    )
+    print(f"Remaining columns: {processed_dataset.column_names}\n")
+
+    # Shuffle and sample first n examples
+    processed_dataset = processed_dataset.shuffle(seed=42).select(range(8192))
+
+    # Set format
+    processed_dataset.set_format(
+        type="torch", columns=["input_ids", "attention_mask"],
+        output_all_columns=True
+    )
+
+    print(f"Total number of examples: {len(processed_dataset)}\n")
+    
+    print("Data preprocessing finished.\n")
+
+    return processed_dataset
 
 
 def get_dataset_trlx(dataset_name, eval_dataset_size, train_dataset_size=8192, subsets_to_delete=None):

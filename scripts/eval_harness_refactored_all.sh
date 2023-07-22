@@ -63,7 +63,7 @@ now=$(date "+%Y%m%d_%H%M%S")
 # keyword="gpt2-xl_rlhfed_long"
 # keyword="gpt2-xl_imdb_rlhfed_supervised"
 keyword="vicuna"
-save_path="logs_eval_burns/${keyword}_${now}_${JOBID}"
+save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
 mkdir $save_path
@@ -76,7 +76,7 @@ cd $workdir
 # Model
 # ----------------------------------------
 # model="gpt2-xl"
-model="lmsys/vicuna-7b-v1.3"
+# model="lmsys/vicuna-7b-v1.3"
 
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_custom_data_v4_20230703_211833_26655/checkpoints/model_step_3"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_custom_data_v4_20230704_091318_26861/checkpoints/model_step_6"
@@ -105,8 +105,7 @@ echo "Model: $model"
 # burns_tasks="ag_news_binarized,dbpedia_14_binarized"
 # burns_tasks="boolq,imdb,dbpedia_14_binarized"
 # burns_tasks="imdb_ps3,imdb_ps4,imdb_burns_1,imdb_burns_2"
-burns_tasks="imdb_vicuna"
-# burns_tasks=""
+burns_tasks=""
 echo "Burns tasks: $burns_tasks"
 
 # open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"
@@ -129,7 +128,6 @@ batch_sizes["imdb_ps3"]="16"
 batch_sizes["imdb_ps4"]="16"
 batch_sizes["imdb_burns_1"]="16"
 batch_sizes["imdb_burns_2"]="16"
-batch_sizes["imdb_vicuna"]="1"
 batch_sizes["qnli_custom"]="32"
 batch_sizes["rte_custom"]="16"
 batch_sizes["arc_challenge"]="16"
@@ -170,7 +168,7 @@ for task in $burns_tasks; do
 
     options="main.py \
         --model hf \
-        --model_args pretrained=$model,load_in_8bit=True \
+        --model_args pretrained=${model} \
         --tasks $task \
         --batch_size $batch_size \
         --output_path $output_path \
