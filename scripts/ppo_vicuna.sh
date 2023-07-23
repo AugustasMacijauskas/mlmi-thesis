@@ -6,7 +6,7 @@
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
 #SBATCH -J augustas-thesis
-#SBATCH --time=20:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mail-type=NONE
 
 
@@ -115,23 +115,25 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --remove_unused_columns=False \
     --log_with=wandb \
     --logging_dir=/fsx/home-augustas/$save_path/ \
-    --learning_rate=5e-7 \
+    --wandb_group=vf_coef_tests \
+    --learning_rate=1e-6 \
     --batch_size=128 \
     --rm_batch_size=64 \
     --generator_batch_size=16 \
     --ppo_batch_size=1 \
     --gradient_accumulation_steps=1 \
-    --steps=16 \
+    --steps=80 \
     --ppo_epochs=4 \
     --early_stopping=True \
     --reward_baseline=0.0 \
     --target_kl=0.1 \
     --init_kl_coef=0.2 \
     --adap_kl_ctrl=True \
+    --vf_coef=2.0 \
     --seed=0 \
     --save_freq=2 \
     --output_dir=/fsx/home-augustas/$save_path/checkpoints/model_ \
-    --log_freq=2 \
+    --is_lora=True \
 "
 
 out_file_path="../$save_path/out.$JOBID"

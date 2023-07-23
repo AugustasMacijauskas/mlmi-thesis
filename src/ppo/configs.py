@@ -26,6 +26,7 @@ class ScriptArguments:
     
     log_with: Optional[str] = field(default=None, metadata={"help": "use 'wandb'/'tensorboard'"})
     logging_dir: Optional[str] = field(default=None, metadata={"help": "the logging directory used if 'log_with' is set to 'ensorboard'"})
+    wandb_group: Optional[str] = field(default=None, metadata={ "help": "the wandb group name" })
     
     learning_rate: Optional[float] = field(default=1.4e-5, metadata={"help": "the learning rate"})
     batch_size: Optional[int] = field(default=32, metadata={"help": "the batch size"})
@@ -49,11 +50,13 @@ class ScriptArguments:
         metadata={"help": "Initial KL penalty coefficient (used for adaptive and linear control)"},
     )
     adap_kl_ctrl: Optional[bool] = field(default=True, metadata={"help": "Use adaptive KL control, otherwise linear"})
+    vf_coef: Optional[float] = field(default=0.1, metadata={ "help": "value function coefficient" })
 
     seed: Optional[int] = field(default=0, metadata={"help": "the seed"})
     save_freq: Optional[int] = field(default=None, metadata={"help": "n epochs to save the model"})
     output_dir: Optional[str] = field(default="../runs_ppo/", metadata={"help": "the directory to save the model to"})
-    log_freq: Optional[int] = field(default=None, metadata={"help": "n batches to log the generated samples"})
+
+    is_lora: Optional[bool] = field(default=True, metadata={ "help": "whether to use LoRA" })
 
 
 def get_script_args(local_args=None):
@@ -83,7 +86,8 @@ def get_ppo_config(script_args: ScriptArguments):
         optimize_cuda_cache=True,
         # project_kwargs={ "logging_dir": script_args.logging_dir },
         tracker_project_name="mlmi-thesis",
-        tracker_kwargs={ "group": "test_runs" },
+        tracker_kwargs={ "group": script_args.wandb_group },
+        vf_coef=script_args.vf_coef,
     )
 
 

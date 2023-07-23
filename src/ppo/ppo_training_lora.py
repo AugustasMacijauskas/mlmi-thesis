@@ -42,7 +42,10 @@ def main():
     tokenizer.pad_token = tokenizer.unk_token
 
     # Dataset for PPO training
-    train_dataset = get_dataset_qnli(script_args.dataset_name, tokenizer, margin=8)
+    train_dataset = get_dataset_qnli(
+        script_args.dataset_name, tokenizer, margin=8,
+        num_examples=81920, seed=config.seed,
+    )
 
     # Dataset templates
     dataset_template_path = "AugustasM/burns-datasets-VINC"
@@ -85,6 +88,8 @@ def main():
         low_cpu_mem_usage=True,
         torch_dtype=torch.float16,
     )
+    memory_usage = model.pretrained_model.get_memory_footprint() / (1024 ** 3)
+    temporary_accelerator.print(f"{memory_usage=:.2f} GB")
 
     # Optimizer
     # TODO: consider whether adding Adafactor back in is a good idea
@@ -109,7 +114,8 @@ def main():
     generation_kwargs = {
         "top_k": 0,
         "top_p": 1.0,
-        "do_sample": False,
+        # "do_sample": False,
+        "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": 100_000, # why is this value like this?
         "pad_to_multiple_of": 8, # TODO: double-check, but this seems to work and to be faster

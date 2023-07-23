@@ -107,7 +107,7 @@ def get_dataset(dataset_name, tokenizer, num_proc=12, subsets_to_delete=None):
     return processed_dataset, prompt_max_len, response_max_len
 
 
-def get_dataset_qnli(dataset_name, tokenizer, num_proc=12, margin=8):
+def get_dataset_qnli(dataset_name, tokenizer, num_proc=12, margin=8, num_examples=8192, seed=42):
     temporary_accelerator.print("Loading dataset...\n")
 
     dataset = load_dataset(dataset_name, split="train")
@@ -138,7 +138,7 @@ def get_dataset_qnli(dataset_name, tokenizer, num_proc=12, margin=8):
     temporary_accelerator.print(f"Remaining columns: {processed_dataset.column_names}\n")
 
     # Shuffle and sample first n examples
-    processed_dataset = processed_dataset.shuffle(seed=42).select(range(8192))
+    processed_dataset = processed_dataset.shuffle(seed=seed).select(range(num_examples))
 
     # Set format
     processed_dataset.set_format(
