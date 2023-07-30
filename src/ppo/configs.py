@@ -55,6 +55,7 @@ class ScriptArguments:
     seed: Optional[int] = field(default=0, metadata={"help": "the seed"})
     save_freq: Optional[int] = field(default=None, metadata={"help": "n epochs to save the model"})
     output_dir: Optional[str] = field(default="../runs_ppo/", metadata={"help": "the directory to save the model to"})
+    log_freq: Optional[int] = field(default=None, metadata={"help": "n epochs to log the model"})
 
     is_lora: Optional[bool] = field(default=True, metadata={ "help": "whether to use LoRA" })
 

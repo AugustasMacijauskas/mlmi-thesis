@@ -81,8 +81,8 @@ cd $workdir
 # ----------------------------------------
 
 # ---------------------------------------- QNLI Vicuna ----------------------------------------
-# reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234029_40903" # Large
-reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234034_40904" # 3B
+reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234029_40903" # Large
+# reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234034_40904" # 3B
 echo "Reward model output path: $reward_model_output_path"
 
 
@@ -116,7 +116,7 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --log_with=wandb \
     --logging_dir=/fsx/home-augustas/$save_path/ \
     --wandb_group=vf_coef_tests \
-    --learning_rate=1e-6 \
+    --learning_rate=1e-7 \
     --batch_size=128 \
     --rm_batch_size=64 \
     --generator_batch_size=16 \
@@ -129,10 +129,11 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --target_kl=0.1 \
     --init_kl_coef=0.2 \
     --adap_kl_ctrl=True \
-    --vf_coef=2.0 \
+    --vf_coef=1.0 \
     --seed=0 \
-    --save_freq=2 \
+    --save_freq=8 \
     --output_dir=/fsx/home-augustas/$save_path/checkpoints/model_ \
+    --log_freq=2 \
     --is_lora=True \
 "
 

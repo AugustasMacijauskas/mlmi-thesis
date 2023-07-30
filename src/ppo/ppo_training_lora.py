@@ -10,7 +10,7 @@ from peft import LoraConfig
 from configs import get_script_args, get_ppo_config
 from dataset import get_dataset_qnli, collator
 from reward_model import get_template, get_reward_model, create_reward_fn
-from model import get_model_with_lora
+from model import get_model_with_lora, get_model_with_unfrozen_layers
 from trainer import train
 from utils import get_tokenizer
 
@@ -75,19 +75,29 @@ def main():
     )
 
     # Model
-    lora_config = LoraConfig(
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.05,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
+    if script_args.is_lora:
+        temporary_accelerator.print("Loading LoRA model.")
+        lora_config = LoraConfig(
+            r=16,
+            lora_alpha=32,
+            lora_dropout=0.05,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
 
-    model = get_model_with_lora(
-        script_args.model_name, current_device, lora_config,
-        low_cpu_mem_usage=True,
-        torch_dtype=torch.float16,
-    )
+        model = get_model_with_lora(
+            script_args.model_name, current_device, lora_config,
+            low_cpu_mem_usage=True,
+            torch_dtype=torch.float16,
+        )
+    else:
+        temporary_accelerator.print("Loading model with unfrozen layers.")
+        model = get_model_with_unfrozen_layers(
+            script_args.model_name, current_device,
+            num_layers_unfrozen=2,
+            low_cpu_mem_usage=True,
+            torch_dtype=torch.float16,
+        )
     memory_usage = model.pretrained_model.get_memory_footprint() / (1024 ** 3)
     temporary_accelerator.print(f"{memory_usage=:.2f} GB")
 

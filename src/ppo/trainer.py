@@ -1,6 +1,26 @@
 from tqdm import tqdm
 tqdm.pandas()
 
+from collections import Counter
+
+
+def log_samples(ppo_trainer, script_args, epoch, batch_idx, batch):
+    # Only print once
+    if not ppo_trainer.accelerator.is_main_process: return
+
+    with open(script_args.logging_dir + "text_samples.txt", "a") as f:
+        f.write(f"Epoch: {epoch}, batch: {batch_idx}\n\n")
+
+        f.write(Counter(batch["response"]).most_common(10).__str__())
+        f.write("\n\n")
+
+        for i, (golden_output, output) in enumerate(zip(batch["best_response"], batch["response"])):
+            f.write(f"Target: {golden_output}, predicted: {output}\n")
+
+            if i == 7: break
+
+        f.write("-"*100 + "\n\n")
+
 
 def train(
     ppo_trainer, tokenizer,
@@ -20,7 +40,7 @@ def train(
             enumerate(ppo_trainer.dataloader),
             total=len(ppo_trainer.dataloader), leave=False
         )
-        for _, batch in loop:
+        for batch_idx, batch in loop:
 
             question_tensors = batch["input_ids"]
 
@@ -47,6 +67,14 @@ def train(
             stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
             ppo_trainer.log_stats(stats, batch, rewards)
 
+            # Log samples at the end of batch
+            if script_args.log_freq and batch_idx and batch_idx % script_args.log_freq == 0:
+                log_samples(ppo_trainer, script_args, epoch, batch_idx, batch)
+
+            # Save at the end of batch
+            if script_args.save_freq and batch_idx and batch_idx % script_args.save_freq == 0:
+                ppo_trainer.save_pretrained(script_args.output_dir + f"step_{epoch}_{batch_idx}")
+
         # Save at the end of epoch
-        if script_args.save_freq and epoch and epoch % script_args.save_freq == 0:
-            ppo_trainer.save_pretrained(script_args.output_dir + f"step_{epoch}")
+        # if script_args.save_freq and epoch and epoch % script_args.save_freq == 0:
+        #     ppo_trainer.save_pretrained(script_args.output_dir + f"step_{epoch}")

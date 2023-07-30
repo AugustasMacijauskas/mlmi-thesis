@@ -57,9 +57,11 @@ echo "Current directory: `pwd`"
 now=$(date "+%Y%m%d_%H%M%S")
 version="v1"
 # keyword="UQA-3b-custom_data_imdb_${version}_single_new_$template_number"
-keyword="UQA-varied-custom_data_qnli_vicuna_${version}"
+# keyword="UQA-11B-v2-qnli-vicuna-${version}_training_size"
+keyword="UQA-11B-v2-training_size_qnli"
+# keyword="UQA-11B-encoder"
 
-save_path="logs/${keyword}_${now}_${JOBID}"
+save_path="logs_elk/${keyword}_${now}_${JOBID}"
 cd ..
 mkdir $save_path
 cd $workdir
@@ -74,26 +76,36 @@ cd $workdir
 # model="allenai/unifiedqa-v2-t5-large-1363200"
 # model="allenai/unifiedqa-v2-t5-3b-1363200"
 model="allenai/unifiedqa-v2-t5-11b-1363200"
+# model="allenai/unifiedqa-t5-11b"
 echo "Model: $model"
 
 
 # ----------------------------------------
 # Dataset
 # ----------------------------------------
+# dataset="ag_news"
+# dataset="amazon_polarity"
+# dataset="super_glue:boolq"
+# dataset="super_glue:copa"
+# dataset="dbpedia_14"
 # dataset="imdb"
+# dataset="piqa"
+dataset="glue:qnli"
+# dataset="super_glue:rte"
 # dataset="AugustasM/burns-datasets-VINC-$version"
 # dataset="AugustasM/burns-datasets-VINC-imdb-$version"
-dataset="AugustasM/qnli-vicuna-$version"
+# dataset="AugustasM/qnli-vicuna-$version"
+# dataset="AugustasM/wrapped-piqa-$version"
 echo "Dataset: $dataset"
 
 
 # ----------------------------------------
 # Template
 # ----------------------------------------
-template_path="AugustasM/burns-datasets-VINC"
+# template_path="AugustasM/burns-datasets-VINC"
 # template_path="AugustasM/burns-datasets-VINC/first"
 # template_path="AugustasM/burns-datasets-VINC/all"
-echo -e "Template path: $template_path\n"
+# echo -e "Template path: $template_path\n"
 
 
 # ----------------------------------------
@@ -117,11 +129,13 @@ application="elk"
 
 options="elicit $model $dataset \
     --num_gpus=$num_gpus --min_gpu_mem=0 \
-    --template_path=$template_path \
-    --max_examples 10000 6000 \
     --supervised single \
     --disable_cache \
+    --max_examples 20000 1000 \
 "
+    # --template_path=$template_path \
+    # --use_encoder_states \
+    # --net ccs
 
 # options="eval $reporter_path $model $dataset \
 #     --num_gpus=$num_gpus --min_gpu_mem=0 \
