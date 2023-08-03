@@ -119,10 +119,10 @@ def main(hparams=None):
     if hparams is None:
         hparams = {}
 
-    device = os.environ.get("RANK")
-    device = torch.device(f"cuda:{device}")
-    model = get_model_trlx("gpt2-xl", device)
-    hparams = { "model": { "model_path": model } }
+    # device = os.environ.get("RANK")
+    # device = torch.device(f"cuda:{device}")
+    # model = get_model_trlx("gpt2-xl", device)
+    # hparams = { "model": { "model_path": model } }
 
     config = TRLConfig.update(default_config, hparams)
 

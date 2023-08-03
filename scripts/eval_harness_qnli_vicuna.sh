@@ -18,14 +18,25 @@
 
 
 # ----------------------------------------
+# Environment configuration
+# ----------------------------------------
+conda env list | grep "*"
+python --version
+
+
+# ----------------------------------------
 # Configuring GPUs
 # ----------------------------------------
 cuda_devices=$(echo $CUDA_VISIBLE_DEVICES)  # Store the value of CUDA_VISIBLE_DEVICES in a variable
+echo "CUDA_VISIBLE_DEVICES: $cuda_devices"
+
 num_gpus=$(echo $cuda_devices | awk -F, '{print NF}')
 echo "num_gpus: $num_gpus"
 
 export NUMEXPR_MAX_THREADS="$((num_gpus * 12))"
 echo "NUMEXPR_MAX_THREADS: $NUMEXPR_MAX_THREADS"
+
+nvidia-smi --query-gpu=gpu_name --format=csv,noheader | head -n 1
 
 
 # ----------------------------------------
@@ -45,7 +56,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna"
+keyword="vicuna_rlfhed"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -59,6 +70,18 @@ cd $workdir
 # ----------------------------------------
 model="lmsys/vicuna-7b-v1.3"
 echo "Model: $model"
+
+
+# ----------------------------------------
+# LoRA weight path
+# ----------------------------------------
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_185452_51334/checkpoints/model_step_1_8"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_093735_52310/checkpoints/model_step_1_12"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_142639_51052/checkpoints/model_step_1_6"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_122231_52395/checkpoints/model_step_1_40"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_16"
+lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
+echo "LoRA path: $lora_path"
 
 
 # ----------------------------------------
@@ -80,16 +103,16 @@ cd ../lm_evaluation_harness_refactored/lm-evaluation-harness
 # ----------------------------------------
 # Launch the commands
 # ----------------------------------------
+    # --log_samples \
 out_file_path="../../$save_path/out-$tasks-$JOBID.out"
-output_path="../../$save_path/outputs/$task.jsonl"
+output_path="../../$save_path/outputs_burns/$task.jsonl"
 accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --mixed_precision=no --dynamo_backend=no \
     main.py \
     --model hf \
-    --model_args pretrained=$model,load_in_8bit=True \
+    --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path \
     --tasks $task \
     --batch_size 8 \
-    --log_samples \
     --output_path $output_path > $out_file_path
 
 

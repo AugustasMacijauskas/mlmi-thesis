@@ -55,11 +55,13 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-version="v1"
+# version="v1"
 # keyword="UQA-3b-custom_data_imdb_${version}_single_new_$template_number"
 # keyword="UQA-11B-v2-qnli-vicuna-${version}_training_size"
-keyword="UQA-11B-v2-training_size_qnli"
-# keyword="UQA-11B-encoder"
+# keyword="UQA-11B-v2-training_size_qnli"
+# keyword="UQA-3B-v2-encoder"
+# keyword="UQA-11B-v2"
+keyword="UQA-varied-cv"
 
 save_path="logs_elk/${keyword}_${now}_${JOBID}"
 cd ..
@@ -90,11 +92,14 @@ echo "Model: $model"
 # dataset="dbpedia_14"
 # dataset="imdb"
 # dataset="piqa"
-dataset="glue:qnli"
+# dataset="glue:qnli"
 # dataset="super_glue:rte"
 # dataset="AugustasM/burns-datasets-VINC-$version"
 # dataset="AugustasM/burns-datasets-VINC-imdb-$version"
 # dataset="AugustasM/qnli-vicuna-$version"
+# dataset="AugustasM/burns-datasets-VINC-v4"
+# dataset="AugustasM/burns-datasets-VINC-imdb-v2"
+dataset="AugustasM/qnli-vicuna-v1"
 # dataset="AugustasM/wrapped-piqa-$version"
 echo "Dataset: $dataset"
 
@@ -102,10 +107,10 @@ echo "Dataset: $dataset"
 # ----------------------------------------
 # Template
 # ----------------------------------------
-# template_path="AugustasM/burns-datasets-VINC"
+template_path="AugustasM/burns-datasets-VINC"
 # template_path="AugustasM/burns-datasets-VINC/first"
 # template_path="AugustasM/burns-datasets-VINC/all"
-# echo -e "Template path: $template_path\n"
+echo -e "Template path: $template_path\n"
 
 
 # ----------------------------------------
@@ -125,15 +130,15 @@ application="elk"
 # --net.seed=0 --data.seed=0 --num_shots=1 --disable_cache --max_examples 1000 2000
 # --supervised {none,single,inlp,cv}
 # --prompt_indices $template_number \
-    # --prompt_indices 1 \
 
 options="elicit $model $dataset \
     --num_gpus=$num_gpus --min_gpu_mem=0 \
-    --supervised single \
-    --disable_cache \
-    --max_examples 20000 1000 \
+    --supervised cv \
+    --template_path=$template_path \
+    --max_examples 10000 6000 \
 "
-    # --template_path=$template_path \
+    # --disable_cache \
+    # --prompt_indices 4 \
     # --use_encoder_states \
     # --net ccs
 

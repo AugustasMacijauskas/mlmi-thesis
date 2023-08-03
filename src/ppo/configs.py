@@ -21,6 +21,7 @@ class ScriptArguments:
 
     dataset_name: Optional[str] = field(default="", metadata={"help": "the dataset name"})
     remove_unused_columns: Optional[bool] = field(default=True, metadata={"help": "whether to remove unused columns"})
+    num_examples: Optional[int] = field(default=8192, metadata={"help": "the number of training examples"})
 
     template_path: Optional[str] = field(default="AugustasM/burns-datasets-VINC", metadata={ "help": "the template path" })
     
@@ -58,6 +59,7 @@ class ScriptArguments:
     log_freq: Optional[int] = field(default=None, metadata={"help": "n epochs to log the model"})
 
     is_lora: Optional[bool] = field(default=True, metadata={ "help": "whether to use LoRA" })
+    postprocess_responses: Optional[bool] = field(default=True, metadata={ "help": "whether to postprocess responses" })
 
 
 def get_script_args(local_args=None):
@@ -86,7 +88,7 @@ def get_ppo_config(script_args: ScriptArguments):
         seed=script_args.seed,
         optimize_cuda_cache=True,
         # project_kwargs={ "logging_dir": script_args.logging_dir },
-        tracker_project_name="mlmi-thesis",
+        tracker_project_name="mlmi-thesis-ppo",
         tracker_kwargs={ "group": script_args.wandb_group },
         vf_coef=script_args.vf_coef,
     )

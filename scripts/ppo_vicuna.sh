@@ -81,8 +81,8 @@ cd $workdir
 # ----------------------------------------
 
 # ---------------------------------------- QNLI Vicuna ----------------------------------------
-reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234029_40903" # Large
-# reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234034_40904" # 3B
+# reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234029_40903" # Large
+reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234034_40904" # 3B
 echo "Reward model output path: $reward_model_output_path"
 
 
@@ -111,30 +111,32 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --tokenizer_name=$tokenizer \
     --reward_model_output_path=$reward_model_output_path \
     --dataset_name=$dataset \
-    --template_path=$template_path \
     --remove_unused_columns=False \
+    --num_examples=81920 \
+    --template_path=$template_path \
     --log_with=wandb \
     --logging_dir=/fsx/home-augustas/$save_path/ \
-    --wandb_group=vf_coef_tests \
-    --learning_rate=1e-7 \
-    --batch_size=128 \
-    --rm_batch_size=64 \
+    --wandb_group=two_tokens \
+    --learning_rate=1e-5 \
+    --batch_size=16 \
+    --rm_batch_size=16 \
     --generator_batch_size=16 \
     --ppo_batch_size=1 \
     --gradient_accumulation_steps=1 \
-    --steps=80 \
+    --steps=640 \
     --ppo_epochs=4 \
     --early_stopping=True \
     --reward_baseline=0.0 \
     --target_kl=0.1 \
-    --init_kl_coef=0.2 \
+    --init_kl_coef=1.0 \
     --adap_kl_ctrl=True \
     --vf_coef=1.0 \
     --seed=0 \
-    --save_freq=8 \
+    --save_freq=16 \
     --output_dir=/fsx/home-augustas/$save_path/checkpoints/model_ \
     --log_freq=2 \
     --is_lora=True \
+    --postprocess_responses=True \
 "
 
 out_file_path="../$save_path/out.$JOBID"

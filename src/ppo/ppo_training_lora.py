@@ -42,9 +42,12 @@ def main():
     tokenizer.pad_token = tokenizer.unk_token
 
     # Dataset for PPO training
+    temporary_accelerator.print(f"{script_args.num_examples=}")
     train_dataset = get_dataset_qnli(
         script_args.dataset_name, tokenizer, margin=8,
-        num_examples=81920, seed=config.seed,
+        seed=config.seed,
+        # num_examples=81920,
+        num_examples=script_args.num_examples,
     )
 
     # Dataset templates
@@ -129,7 +132,7 @@ def main():
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": 100_000, # why is this value like this?
         "pad_to_multiple_of": 8, # TODO: double-check, but this seems to work and to be faster
-        "max_new_tokens": 1,
+        "max_new_tokens": 2,
     }
 
     # Store starting time to get training duration in HH:MM:SS format later
