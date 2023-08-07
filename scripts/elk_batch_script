@@ -61,7 +61,7 @@ now=$(date "+%Y%m%d_%H%M%S")
 # keyword="UQA-11B-v2-training_size_qnli"
 # keyword="UQA-3B-v2-encoder"
 # keyword="UQA-11B-v2"
-keyword="UQA-3B-v2-individual"
+keyword="UQA-3B-v2-qnli-vicuna-ccs"
 
 save_path="logs_elk/${keyword}_${now}_${JOBID}"
 cd ..
@@ -101,7 +101,7 @@ echo "Model: $model"
 # dataset="AugustasM/burns-datasets-VINC-individual-copa"
 # dataset="AugustasM/burns-datasets-VINC-individual-dbpedia_14"
 # dataset="AugustasM/burns-datasets-VINC-individual-imdb"
-dataset="AugustasM/burns-datasets-VINC-individual-piqa"
+# dataset="AugustasM/burns-datasets-VINC-individual-piqa"
 # dataset="AugustasM/burns-datasets-VINC-individual-qnli"
 # dataset="AugustasM/burns-datasets-VINC-individual-rte"
 
@@ -110,7 +110,7 @@ dataset="AugustasM/burns-datasets-VINC-individual-piqa"
 # dataset="AugustasM/qnli-vicuna-$version"
 # dataset="AugustasM/burns-datasets-VINC-v4"
 # dataset="AugustasM/burns-datasets-VINC-imdb-v2"
-# dataset="AugustasM/qnli-vicuna-v1"
+dataset="AugustasM/qnli-vicuna-v1"
 # dataset="AugustasM/wrapped-piqa-$version"
 echo "Dataset: $dataset"
 
@@ -146,12 +146,12 @@ options="elicit $model $dataset \
     --num_gpus=$num_gpus --min_gpu_mem=0 \
     --supervised single \
     --template_path=$template_path \
-    --max_examples 2000 2000 \
+    --max_examples 10000 6000 \
+    --net ccs
 "
     # --disable_cache \
     # --prompt_indices 4 \
     # --use_encoder_states \
-    # --net ccs
 
 # options="eval $reporter_path $model $dataset \
 #     --num_gpus=$num_gpus --min_gpu_mem=0 \
