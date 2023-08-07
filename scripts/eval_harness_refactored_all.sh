@@ -57,12 +57,11 @@ echo "Current directory: `pwd`"
 now=$(date "+%Y%m%d_%H%M%S")
 # keyword="gpt2-xl_rlhfed_imdb_openllm"
 # keyword="gpt2-xl_test_updates"
-# keyword="gpt2-xl"
+keyword="gpt2-xl-imdb-rlhfed"
 # keyword="gpt2-xl_rlhfed"
 # keyword="gpt2-xl_rlhfed_short"
 # keyword="gpt2-xl_rlhfed_long"
 # keyword="gpt2-xl_imdb_rlhfed_supervised"
-keyword="vicuna"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -94,7 +93,7 @@ cd $workdir
 # ----------- Supervised models -----------
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_supervised_20230718_003533_37165/checkpoints/model_step_4"
 # model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_supervised_20230718_003533_37165/checkpoints/model_step_8"
-# model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_supervised_20230718_003533_37165/checkpoints/model_step_12"
+model="/fsx/home-augustas/ppo_logs/gpt2-xl_unifiedqa_3b_imdb_supervised_20230718_003533_37165/checkpoints/model_step_12"
 echo "Model: $model"
 
 
@@ -104,8 +103,8 @@ echo "Model: $model"
 # burns_tasks="ag_news_binarized,boolq,copa,imdb,qnli_custom,rte_custom,dbpedia_14_binarized,amazon_polarity"
 # burns_tasks="ag_news_binarized,dbpedia_14_binarized"
 # burns_tasks="boolq,imdb,dbpedia_14_binarized"
-# burns_tasks="imdb_ps3,imdb_ps4,imdb_burns_1,imdb_burns_2"
-burns_tasks=""
+burns_tasks="imdb_ps3,imdb_ps4,imdb_burns_1,imdb_burns_2"
+# burns_tasks=""
 echo "Burns tasks: $burns_tasks"
 
 # open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"

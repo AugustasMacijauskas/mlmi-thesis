@@ -56,7 +56,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna_rlfhed"
+keyword="vicuna-qnli-old-fixed"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -68,8 +68,18 @@ cd $workdir
 # ----------------------------------------
 # Model
 # ----------------------------------------
-model="lmsys/vicuna-7b-v1.3"
+# model="lmsys/vicuna-7b-v1.3"
+model="lmsys/vicuna-7b-v1.5"
+# model="AugustasM/vicuna-v1.5-rl-qnli-v1"
 echo "Model: $model"
+
+
+# ----------------------------------------
+# Tokenizer
+# ----------------------------------------
+# tokenizer="lmsys/vicuna-7b-v1.3"
+tokenizer="lmsys/vicuna-7b-v1.5"
+echo "Tokenizer: $tokenizer"
 
 
 # ----------------------------------------
@@ -80,14 +90,21 @@ echo "Model: $model"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_142639_51052/checkpoints/model_step_1_6"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_122231_52395/checkpoints/model_step_1_40"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_16"
-lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
+
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_16"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_32"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_48"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
+# lora_path=""
 echo "LoRA path: $lora_path"
 
 
 # ----------------------------------------
 # The task
 # ----------------------------------------
-task="qnli_vicuna"
+# task="qnli_vicuna"
+task="qnli_custom_2"
 echo -e "Task: $task\n"
 
 
@@ -104,6 +121,7 @@ cd ../lm_evaluation_harness_refactored/lm-evaluation-harness
 # Launch the commands
 # ----------------------------------------
     # --log_samples \
+    # --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path,tokenizer=$tokenizer \
 out_file_path="../../$save_path/out-$tasks-$JOBID.out"
 output_path="../../$save_path/outputs_burns/$task.jsonl"
 accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
@@ -112,7 +130,7 @@ accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --model hf \
     --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path \
     --tasks $task \
-    --batch_size 8 \
+    --batch_size 32 \
     --output_path $output_path > $out_file_path
 
 

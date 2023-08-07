@@ -52,14 +52,16 @@ echo "Current directory: `pwd`"
 # ----------------------------------------
 # Model
 # ----------------------------------------
-model="lmsys/vicuna-7b-v1.3"
+# model="lmsys/vicuna-7b-v1.3"
+model="lmsys/vicuna-7b-v1.5"
 echo "Model: $model"
 
 
 # ----------------------------------------
 # Policy tokenizer
 # ----------------------------------------
-tokenizer="huggyllama/llama-7b"
+# tokenizer="huggyllama/llama-7b"
+tokenizer="lmsys/vicuna-7b-v1.5"
 echo "Tokenizer: $tokenizer"
 
 
@@ -67,7 +69,7 @@ echo "Tokenizer: $tokenizer"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna_UQA_3b_qnli"
+keyword="vicuna-v1.5_UQA_3b_qnli"
 
 cd ..
 save_path_stem="${keyword}_${now}_${JOBID}"
@@ -128,7 +130,7 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --early_stopping=True \
     --reward_baseline=0.0 \
     --target_kl=0.1 \
-    --init_kl_coef=1.0 \
+    --init_kl_coef=0.2 \
     --adap_kl_ctrl=True \
     --vf_coef=1.0 \
     --seed=0 \

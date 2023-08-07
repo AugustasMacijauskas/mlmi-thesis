@@ -38,8 +38,8 @@ def main():
 
     # Tokenizer
     tokenizer = get_tokenizer(script_args.tokenizer_name)
-    tokenizer.padding_side = "right"
-    tokenizer.pad_token = tokenizer.unk_token
+    # tokenizer.padding_side = "right"
+    # tokenizer.pad_token = tokenizer.unk_token
 
     # Dataset for PPO training
     temporary_accelerator.print(f"{script_args.num_examples=}")

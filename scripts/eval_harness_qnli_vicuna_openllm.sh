@@ -3,10 +3,10 @@
 #SBATCH -A trlx
 #SBATCH -p g40
 #SBATCH --nodes=1
-#SBATCH --gpus=1
+#SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
 #SBATCH -J augustas-thesis
-#SBATCH --time=10:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mail-type=NONE
 
 
@@ -69,7 +69,9 @@ cd $workdir
 # Model
 # ----------------------------------------
 model="lmsys/vicuna-7b-v1.3"
+# model="lmsys/vicuna-7b-v1.5"
 # model="AugustasM/vicuna_rlhfed_v1"
+# model="AugustasM/vicuna-v1.5-rl-qnli-v1"
 echo "Model: $model"
 
 
@@ -77,6 +79,7 @@ echo "Model: $model"
 # Tokenizer
 # ----------------------------------------
 tokenizer="lmsys/vicuna-7b-v1.3"
+# tokenizer="lmsys/vicuna-7b-v1.5"
 echo "Tokenizer: $tokenizer"
 
 
@@ -88,8 +91,13 @@ echo "Tokenizer: $tokenizer"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_142639_51052/checkpoints/model_step_1_6"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_122231_52395/checkpoints/model_step_1_40"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
-lora_path=""
+lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
+
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_16"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_32"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_48"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
+# lora_path=""
 echo "LoRA path: $lora_path"
 
 
@@ -97,8 +105,9 @@ echo "LoRA path: $lora_path"
 # All tasks
 # ----------------------------------------
 # open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc,mmlu"
-open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"
-# open_llm_leaderboard_tasks="arc_challenge,hellaswag"
+# open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"
+open_llm_leaderboard_tasks="arc_challenge,hellaswag"
+# open_llm_leaderboard_tasks="mmlu"
 # open_llm_leaderboard_tasks="truthfulqa_mc"
 echo -e "Open LLM leaderboard tasks: $open_llm_leaderboard_tasks\n"
 
@@ -181,6 +190,7 @@ if [[ $open_llm_leaderboard_tasks == *"truthfulqa_mc"* ]]; then
     tasks="truthfulqa_mc"
     shots="0"
     
+    # --model_args pretrained=$model,peft=$lora_path \
     out_file_path="../$save_path/out-$task-$JOBID.out"
     python main.py \
         --model hf-causal \
@@ -207,11 +217,11 @@ if [[ $open_llm_leaderboard_tasks == *"mmlu"* ]]; then
     
     out_file_path="../$save_path/out-$task-$JOBID.out"
     python main.py \
-        --model hf-causal \
-        --model_args pretrained=$model,tokenizer=$tokenizer \
+        --model hf-causal-experimental \
+        --model_args pretrained=$model,tokenizer=$tokenizer,use_accelerate=True,load_in_8bit=True \
         --tasks $tasks \
         --num_fewshot $shots \
-        --batch_size 4 \
+        --batch_size 8 \
         --output_path /fsx/home-augustas/$save_path/outputs_open_llm/$task-$shots-shot.json \
         --device cuda > $out_file_path
 fi
