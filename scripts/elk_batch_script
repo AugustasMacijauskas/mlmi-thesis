@@ -61,7 +61,7 @@ now=$(date "+%Y%m%d_%H%M%S")
 # keyword="UQA-11B-v2-training_size_qnli"
 # keyword="UQA-3B-v2-encoder"
 # keyword="UQA-11B-v2"
-keyword="UQA-3B-v2-qnli-vicuna-ccs"
+keyword="UQA-11B-v2-custom-imdb-ccs"
 
 save_path="logs_elk/${keyword}_${now}_${JOBID}"
 cd ..
@@ -76,8 +76,8 @@ cd $workdir
 # model="allenai/unifiedqa-v2-t5-small-1363200"
 # model="allenai/unifiedqa-v2-t5-base-1363200"
 # model="allenai/unifiedqa-v2-t5-large-1363200"
-model="allenai/unifiedqa-v2-t5-3b-1363200"
-# model="allenai/unifiedqa-v2-t5-11b-1363200"
+# model="allenai/unifiedqa-v2-t5-3b-1363200"
+model="allenai/unifiedqa-v2-t5-11b-1363200"
 # model="allenai/unifiedqa-t5-11b"
 echo "Model: $model"
 
@@ -109,8 +109,8 @@ echo "Model: $model"
 # dataset="AugustasM/burns-datasets-VINC-imdb-$version"
 # dataset="AugustasM/qnli-vicuna-$version"
 # dataset="AugustasM/burns-datasets-VINC-v4"
-# dataset="AugustasM/burns-datasets-VINC-imdb-v2"
-dataset="AugustasM/qnli-vicuna-v1"
+dataset="AugustasM/burns-datasets-VINC-imdb-v2"
+# dataset="AugustasM/qnli-vicuna-v1"
 # dataset="AugustasM/wrapped-piqa-$version"
 echo "Dataset: $dataset"
 
@@ -146,7 +146,7 @@ options="elicit $model $dataset \
     --num_gpus=$num_gpus --min_gpu_mem=0 \
     --supervised single \
     --template_path=$template_path \
-    --max_examples 10000 6000 \
+    --max_examples 10000 2000 \
     --net ccs
 "
     # --disable_cache \
