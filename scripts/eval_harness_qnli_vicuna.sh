@@ -56,7 +56,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna-qnli-old-fixed"
+keyword="vicuna-33B"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -69,7 +69,10 @@ cd $workdir
 # Model
 # ----------------------------------------
 # model="lmsys/vicuna-7b-v1.3"
-model="lmsys/vicuna-7b-v1.5"
+# model="lmsys/vicuna-7b-v1.5"
+# model="lmsys/vicuna-13b-v1.3"
+# model="lmsys/vicuna-13b-v1.5"
+model="lmsys/vicuna-33b-v1.3"
 # model="AugustasM/vicuna-v1.5-rl-qnli-v1"
 echo "Model: $model"
 
@@ -78,7 +81,9 @@ echo "Model: $model"
 # Tokenizer
 # ----------------------------------------
 # tokenizer="lmsys/vicuna-7b-v1.3"
-tokenizer="lmsys/vicuna-7b-v1.5"
+# tokenizer="lmsys/vicuna-7b-v1.5"
+# tokenizer="lmsys/vicuna-13b-v1.3"
+# tokenizer="lmsys/vicuna-13b-v1.5"
 echo "Tokenizer: $tokenizer"
 
 
@@ -103,8 +108,8 @@ echo "LoRA path: $lora_path"
 # ----------------------------------------
 # The task
 # ----------------------------------------
-# task="qnli_vicuna"
-task="qnli_custom_2"
+task="qnli_vicuna"
+# task="qnli_custom_2"
 echo -e "Task: $task\n"
 
 
@@ -122,6 +127,8 @@ cd ../lm_evaluation_harness_refactored/lm-evaluation-harness
 # ----------------------------------------
     # --log_samples \
     # --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path,tokenizer=$tokenizer \
+    # --model_args pretrained=$model,parallelize=True,peft=$lora_path \
+    # --model_args pretrained=$model,load_in_8bit=True,parallelize=True,max_memory_per_gpu='39GiB' \
 out_file_path="../../$save_path/out-$tasks-$JOBID.out"
 output_path="../../$save_path/outputs_burns/$task.jsonl"
 accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
@@ -130,7 +137,7 @@ accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --model hf \
     --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path \
     --tasks $task \
-    --batch_size 32 \
+    --batch_size 8 \
     --output_path $output_path > $out_file_path
 
 

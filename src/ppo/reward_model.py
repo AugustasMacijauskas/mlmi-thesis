@@ -16,6 +16,7 @@ import sys
 ELK_PATH = Path("/fsx/home-augustas/elk/")
 modules = [
     ELK_PATH,
+    ELK_PATH / "elk" / "training",
     ELK_PATH / "elk" / "promptsource",
 ]
 for module in modules:
@@ -23,6 +24,7 @@ for module in modules:
         sys.path.insert(0, str(module.resolve()))
 
 from templates import DatasetTemplates
+from reporter import Reporter
 
 from accelerate import Accelerator
 temporary_accelerator = Accelerator()
@@ -135,7 +137,10 @@ def get_probe(
 
     # Load the probe
     temporary_accelerator.print(f"Loading the probe from {probe_path}")
-    probe = torch.load(probe_path, map_location=current_device)
+    if supervised:
+        probe = torch.load(probe_path, map_location=current_device)
+    else:
+        probe = Reporter.load(probe_path, map_location=current_device)
 
     if supervised:
         assert len(probe) == 1
@@ -149,10 +154,11 @@ def get_probe(
         probe.bias.requires_grad_(False)
         probe.scale.requires_grad_(False)
 
-        if is_bf16_possible:
-            probe.weight = probe.weight.bfloat16()
-            probe.bias = probe.bias.bfloat16()
-            probe.scale = probe.scale.bfloat16()
+        # if is_bf16_possible:
+            # probe.weight = probe.weight.bfloat16()
+            # probe.bias = probe.bias.bfloat16()
+            # probe.scale = probe.scale.bfloat16()
+            # probe = probe.bfloat16()
 
     temporary_accelerator.print("Finished loading the probe.\n")
 

@@ -132,9 +132,7 @@ def get_dataset_qnli(dataset_name, tokenizer, num_proc=12, margin=8, num_example
     )
 
     # Remove original columns
-    processed_dataset = processed_dataset.remove_columns(
-        original_column_names + ["token_type_ids"]
-    )
+    processed_dataset = processed_dataset.remove_columns(original_column_names)
     temporary_accelerator.print(f"Remaining columns: {processed_dataset.column_names}\n")
 
     # Shuffle and sample first n examples

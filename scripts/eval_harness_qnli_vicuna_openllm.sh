@@ -56,7 +56,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna_rlhfed_openllm"
+keyword="vicuna-openllm-mmlu"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -78,7 +78,7 @@ echo "Model: $model"
 # ----------------------------------------
 # Tokenizer
 # ----------------------------------------
-tokenizer="lmsys/vicuna-7b-v1.3"
+# tokenizer="lmsys/vicuna-7b-v1.3"
 # tokenizer="lmsys/vicuna-7b-v1.5"
 echo "Tokenizer: $tokenizer"
 
@@ -91,7 +91,7 @@ echo "Tokenizer: $tokenizer"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_142639_51052/checkpoints/model_step_1_6"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_122231_52395/checkpoints/model_step_1_40"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_16"
-lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
 
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_16"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_32"
@@ -169,7 +169,7 @@ for task in $open_llm_leaderboard_tasks; do
         --mixed_precision=no --dynamo_backend=no \
         main.py \
         --model hf \
-        --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path,tokenizer=$tokenizer \
+        --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path \
         --tasks $task \
         --num_fewshot $shots \
         --batch_size $batch_size \
@@ -191,10 +191,11 @@ if [[ $open_llm_leaderboard_tasks == *"truthfulqa_mc"* ]]; then
     shots="0"
     
     # --model_args pretrained=$model,peft=$lora_path \
+        # --model_args pretrained=$model,tokenizer=$tokenizer \
     out_file_path="../$save_path/out-$task-$JOBID.out"
     python main.py \
-        --model hf-causal \
-        --model_args pretrained=$model,tokenizer=$tokenizer \
+        --model hf-causal-experimental \
+        --model_args pretrained=$model,peft=$lora_path \
         --tasks $tasks \
         --num_fewshot $shots \
         --batch_size 32 \
@@ -216,12 +217,14 @@ if [[ $open_llm_leaderboard_tasks == *"mmlu"* ]]; then
     shots="5"
     
     out_file_path="../$save_path/out-$task-$JOBID.out"
+        # --model_args pretrained=$model,tokenizer=$tokenizer,use_accelerate=True,load_in_8bit=True \
+        # --model_args pretrained=$model,peft=$lora_path,use_accelerate=True,load_in_8bit=True \
     python main.py \
         --model hf-causal-experimental \
-        --model_args pretrained=$model,tokenizer=$tokenizer,use_accelerate=True,load_in_8bit=True \
+        --model_args pretrained=$model,peft=$lora_path \
         --tasks $tasks \
         --num_fewshot $shots \
-        --batch_size 8 \
+        --batch_size 4 \
         --output_path /fsx/home-augustas/$save_path/outputs_open_llm/$task-$shots-shot.json \
         --device cuda > $out_file_path
 fi
