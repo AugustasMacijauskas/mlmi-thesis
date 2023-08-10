@@ -78,29 +78,24 @@ def main():
     )
 
     # Model
-    if script_args.is_lora:
-        temporary_accelerator.print("Loading LoRA model.")
-        lora_config = LoraConfig(
-            r=16,
-            lora_alpha=32,
-            lora_dropout=0.05,
-            bias="none",
-            task_type="CAUSAL_LM",
-        )
+    modules = None
+    if script_args.full_lora:
+        modules = ['down_proj', 'q_proj', 'v_proj', 'o_proj', 'up_proj', 'k_proj', 'gate_proj', 'summary']
+    temporary_accelerator.print("Loading LoRA model.")
+    lora_config = LoraConfig(
+        r=16,
+        lora_alpha=32,
+        target_modules=modules,
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
 
-        model = get_model_with_lora(
-            script_args.model_name, current_device, lora_config,
-            low_cpu_mem_usage=True,
-            torch_dtype=torch.float16,
-        )
-    else:
-        temporary_accelerator.print("Loading model with unfrozen layers.")
-        model = get_model_with_unfrozen_layers(
-            script_args.model_name, current_device,
-            num_layers_unfrozen=2,
-            low_cpu_mem_usage=True,
-            torch_dtype=torch.float16,
-        )
+    model = get_model_with_lora(
+        script_args.model_name, current_device, lora_config,
+        low_cpu_mem_usage=True,
+        torch_dtype=torch.float16,
+    )
     memory_usage = model.pretrained_model.get_memory_footprint() / (1024 ** 3)
     temporary_accelerator.print(f"{memory_usage=:.2f} GB")
 

@@ -61,6 +61,7 @@ echo "Model: $model"
 # Policy tokenizer
 # ----------------------------------------
 # tokenizer="huggyllama/llama-7b"
+# tokenizer="lmsys/vicuna-7b-v1.3"
 tokenizer="lmsys/vicuna-7b-v1.5"
 echo "Tokenizer: $tokenizer"
 
@@ -69,7 +70,7 @@ echo "Tokenizer: $tokenizer"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna-v1.5_UQA_3b_qnli"
+keyword="vicuna-full-LoRA-UQA-3B"
 
 cd ..
 save_path_stem="${keyword}_${now}_${JOBID}"
@@ -137,8 +138,8 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --save_freq=16 \
     --output_dir=/fsx/home-augustas/$save_path/checkpoints/model_ \
     --log_freq=2 \
-    --is_lora=True \
     --postprocess_responses=True \
+    --full_lora=True \
 "
 
 out_file_path="../$save_path/out.$JOBID"

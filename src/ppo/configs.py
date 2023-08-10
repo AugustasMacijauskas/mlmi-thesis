@@ -58,7 +58,7 @@ class ScriptArguments:
     output_dir: Optional[str] = field(default="../runs_ppo/", metadata={"help": "the directory to save the model to"})
     log_freq: Optional[int] = field(default=None, metadata={"help": "n epochs to log the model"})
 
-    is_lora: Optional[bool] = field(default=True, metadata={ "help": "whether to use LoRA" })
+    full_lora: Optional[bool] = field(default=False, metadata={ "help": "Whether to use full LoRA. If false, only q, v are updated." })
     postprocess_responses: Optional[bool] = field(default=True, metadata={ "help": "whether to postprocess responses" })
 
 
