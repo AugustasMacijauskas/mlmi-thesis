@@ -72,8 +72,7 @@ def get_dataset(dataset_name, tokenizer, num_proc=12, subsets_to_delete=None):
     )
     print(f"\nMax prompt length: {prompt_max_len}\n")
 
-    # Do not need to truncate for GPT-J 6B or dolly-v2
-    # check for other models
+    # TODO: add check if truncation is needed
     processed_dataset = dataset.map(
         lambda batch: tokenizer(batch["prompt"]), batched=True, num_proc=num_proc
     )
@@ -116,8 +115,7 @@ def get_dataset_qnli(dataset_name, tokenizer, num_proc=12, margin=8, num_example
     original_column_names.remove("query") # but want to keep the prompt
     original_column_names.remove("best_response") # and want to keep the prompt
 
-    # Do not need to truncate for GPT-J 6B or dolly-v2
-    # check for other models
+    # TODO: add check if truncation is needed
     processed_dataset = dataset.map(
         lambda batch: tokenizer(batch["query"]), batched=True, num_proc=num_proc
     )

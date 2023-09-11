@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -A trlx
-#SBATCH -p g40
+#SBATCH -p g40x
 #SBATCH --nodes=1
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
@@ -53,7 +53,9 @@ echo "Current directory: `pwd`"
 # Model
 # ----------------------------------------
 # model="lmsys/vicuna-7b-v1.3"
-model="lmsys/vicuna-7b-v1.5"
+# model="lmsys/vicuna-7b-v1.5"
+# model="lmsys/vicuna-13b-v1.3"
+model="lmsys/vicuna-13b-v1.5"
 echo "Model: $model"
 
 
@@ -62,7 +64,9 @@ echo "Model: $model"
 # ----------------------------------------
 # tokenizer="huggyllama/llama-7b"
 # tokenizer="lmsys/vicuna-7b-v1.3"
-tokenizer="lmsys/vicuna-7b-v1.5"
+# tokenizer="lmsys/vicuna-7b-v1.5"
+# tokenizer="lmsys/vicuna-13b-v1.3"
+tokenizer="lmsys/vicuna-13b-v1.5"
 echo "Tokenizer: $tokenizer"
 
 
@@ -70,7 +74,7 @@ echo "Tokenizer: $tokenizer"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna-full-LoRA-UQA-3B"
+keyword="vicuna-13B-UQA-3B"
 
 cd ..
 save_path_stem="${keyword}_${now}_${JOBID}"
@@ -82,8 +86,6 @@ cd $workdir
 # ----------------------------------------
 # Reward model
 # ----------------------------------------
-
-# ---------------------------------------- QNLI Vicuna ----------------------------------------
 # reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234029_40903" # Large
 reward_model_output_path="/fsx/home-augustas/logs/UQA-varied-custom_data_qnli_vicuna_v1_20230721_234034_40904" # 3B
 echo "Reward model output path: $reward_model_output_path"
@@ -115,7 +117,7 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --reward_model_output_path=$reward_model_output_path \
     --dataset_name=$dataset \
     --remove_unused_columns=False \
-    --num_examples=81920 \
+    --num_examples=8192 \
     --template_path=$template_path \
     --log_with=wandb \
     --logging_dir=/fsx/home-augustas/$save_path/ \
@@ -123,10 +125,10 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --learning_rate=1e-5 \
     --batch_size=16 \
     --rm_batch_size=16 \
-    --generator_batch_size=16 \
+    --generator_batch_size=8 \
     --ppo_batch_size=1 \
     --gradient_accumulation_steps=1 \
-    --steps=640 \
+    --steps=64 \
     --ppo_epochs=4 \
     --early_stopping=True \
     --reward_baseline=0.0 \
@@ -139,7 +141,7 @@ options="launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --output_dir=/fsx/home-augustas/$save_path/checkpoints/model_ \
     --log_freq=2 \
     --postprocess_responses=True \
-    --full_lora=True \
+    --full_lora=False \
 "
 
 out_file_path="../$save_path/out.$JOBID"

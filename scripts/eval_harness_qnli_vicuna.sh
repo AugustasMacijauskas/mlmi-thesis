@@ -56,7 +56,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna-33B"
+keyword="vicuna-full-lora"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -70,9 +70,9 @@ cd $workdir
 # ----------------------------------------
 # model="lmsys/vicuna-7b-v1.3"
 # model="lmsys/vicuna-7b-v1.5"
-# model="lmsys/vicuna-13b-v1.3"
+model="lmsys/vicuna-13b-v1.3"
 # model="lmsys/vicuna-13b-v1.5"
-model="lmsys/vicuna-33b-v1.3"
+# model="lmsys/vicuna-33b-v1.3"
 # model="AugustasM/vicuna-v1.5-rl-qnli-v1"
 echo "Model: $model"
 
@@ -101,6 +101,23 @@ echo "Tokenizer: $tokenizer"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_32"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_48"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
+
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_16"
+lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_32"
+
+
+# ---------------------------------------- Full LoRA ----------------------------------------
+# 7B-v1.3
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230806_59513/checkpoints/model_step_1_16"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_235545_59747/checkpoints/model_step_1_25"
+
+# 7B-v1.5
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_16"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230811_010853_60289/checkpoints/model_step_1_21"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230811_000657_59889/checkpoints/model_step_1_25"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_32"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_48"
+
 # lora_path=""
 echo "LoRA path: $lora_path"
 
@@ -137,7 +154,7 @@ accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --model hf \
     --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path \
     --tasks $task \
-    --batch_size 8 \
+    --batch_size 4 \
     --output_path $output_path > $out_file_path
 
 

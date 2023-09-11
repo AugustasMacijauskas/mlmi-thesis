@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -A trlx
-#SBATCH -p g40
+#SBATCH -p g40x
 #SBATCH --nodes=1
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
@@ -56,7 +56,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna-openllm-mmlu"
+keyword="vicuna-13B-openllm"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -68,8 +68,10 @@ cd $workdir
 # ----------------------------------------
 # Model
 # ----------------------------------------
-model="lmsys/vicuna-7b-v1.3"
+# model="lmsys/vicuna-7b-v1.3"
 # model="lmsys/vicuna-7b-v1.5"
+# model="lmsys/vicuna-13b-v1.3"
+model="lmsys/vicuna-13b-v1.5"
 # model="AugustasM/vicuna_rlhfed_v1"
 # model="AugustasM/vicuna-v1.5-rl-qnli-v1"
 echo "Model: $model"
@@ -97,6 +99,22 @@ echo "Tokenizer: $tokenizer"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_32"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_48"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
+
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_32"
+
+
+# ---------------------------------------- Full LoRA ----------------------------------------
+# 7B-v1.3
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230806_59513/checkpoints/model_step_1_16"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_235545_59747/checkpoints/model_step_1_25"
+
+# 7B-v1.5
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_16"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230811_000657_59889/checkpoints/model_step_1_25"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_32"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_48"
+
+
 # lora_path=""
 echo "LoRA path: $lora_path"
 
@@ -106,9 +124,9 @@ echo "LoRA path: $lora_path"
 # ----------------------------------------
 # open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc,mmlu"
 # open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"
-open_llm_leaderboard_tasks="arc_challenge,hellaswag"
+# open_llm_leaderboard_tasks="arc_challenge,hellaswag"
 # open_llm_leaderboard_tasks="mmlu"
-# open_llm_leaderboard_tasks="truthfulqa_mc"
+open_llm_leaderboard_tasks="truthfulqa_mc"
 echo -e "Open LLM leaderboard tasks: $open_llm_leaderboard_tasks\n"
 
 
@@ -198,7 +216,7 @@ if [[ $open_llm_leaderboard_tasks == *"truthfulqa_mc"* ]]; then
         --model_args pretrained=$model,peft=$lora_path \
         --tasks $tasks \
         --num_fewshot $shots \
-        --batch_size 32 \
+        --batch_size 16 \
         --output_path /fsx/home-augustas/$save_path/outputs_open_llm/$tasks-$shots-shot.jsonl \
         --device cuda > $out_file_path
 fi
