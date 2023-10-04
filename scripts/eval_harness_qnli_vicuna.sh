@@ -91,7 +91,7 @@ echo "Tokenizer: $tokenizer"
 # ----------------------------------------
 # LoRA weight path
 # ----------------------------------------
-lora_path="~/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
+lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
 # lora_path=""
 echo "LoRA path: $lora_path"
 

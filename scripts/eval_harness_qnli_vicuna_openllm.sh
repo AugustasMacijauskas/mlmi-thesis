@@ -4,14 +4,13 @@
 # 1 node, 8 GPUs, 12 CPUs per GPU, 10 hours
 # To get email notifications use the --mail-type option
 
-#SBATCH -A trlx
-#SBATCH -p g40x
+#SBATCH -A <account>
+#SBATCH -p <partition>
 #SBATCH --nodes=1
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
-#SBATCH -J augustas-thesis
+#SBATCH -J <job-name>
 #SBATCH --time=10:00:00
-#SBATCH --mail-type=NONE
 
 
 # ----------------------------------------
@@ -92,7 +91,7 @@ echo "Tokenizer: $tokenizer"
 # ----------------------------------------
 # LoRA weight path
 # ----------------------------------------
-lora_path="~/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
+lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
 # lora_path=""
 echo "LoRA path: $lora_path"
 
@@ -179,9 +178,7 @@ done
 
 # Check if "truthfulqa_mc" is in the list
 if [[ $open_llm_leaderboard_tasks == *"truthfulqa_mc"* ]]; then
-    # Adjust this if only evaluating for the truthfulqa_mc task
-    cd ../../lm-evaluation-harness
-    # cd ~/lm-evaluation-harness
+    cd /fsx/home-augustas/lm-evaluation-harness
     
     task="truthfulqa_mc"
     tasks="truthfulqa_mc"
@@ -196,7 +193,7 @@ if [[ $open_llm_leaderboard_tasks == *"truthfulqa_mc"* ]]; then
         --tasks $tasks \
         --num_fewshot $shots \
         --batch_size 32 \
-        --output_path ../$save_path/outputs_open_llm/$tasks-$shots-shot.jsonl \
+        --output_path /fsx/home-augustas/$save_path/outputs_open_llm/$tasks-$shots-shot.jsonl \
         --device cuda > $out_file_path
 fi
 
@@ -207,8 +204,7 @@ fi
 
 # Check if "mmlu" is in the list
 if [[ $open_llm_leaderboard_tasks == *"mmlu"* ]]; then
-    # Adjust this if only evaluating for the mmlu task
-    # cd ~/lm-evaluation-harness
+    cd /fsx/home-augustas/lm-evaluation-harness
     
     task="mmlu"
     tasks="hendrycksTest-*"
@@ -221,7 +217,7 @@ if [[ $open_llm_leaderboard_tasks == *"mmlu"* ]]; then
         --tasks $tasks \
         --num_fewshot $shots \
         --batch_size 4 \
-        --output_path ../$save_path/outputs_open_llm/$task-$shots-shot.json \
+        --output_path /fsx/home-augustas/$save_path/outputs_open_llm/$task-$shots-shot.json \
         --device cuda > $out_file_path
 fi
 
@@ -230,14 +226,14 @@ fi
 # Average out the Open LLM results
 # ----------------------------------------
 if [[ -n "$open_llm_leaderboard_tasks" ]]; then
-    cd ..
+    cd /fsx/home-augustas/
     python mlmi-thesis/src/utils/get_harness_results.py --output_path=$save_path
 fi
 
 # ----------------------------------------
 # Move the output file
 # ----------------------------------------
-cd mlmi-thesis/
+cd /fsx/home-augustas/mlmi-thesis
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out ../$save_path
 
