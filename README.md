@@ -11,6 +11,8 @@ Use methods that _discover latent knowledge_ (DLK), such as <a href="https://arx
 
 For more details, see the accompanying <a href="https://augustasmacijauskas.github.io/personal-website/posts/thesis/thesis.html" target="_blank">blog post</a> and the <a href="https://augustasmacijauskas.github.io/personal-website/posts/thesis/mlmi-thesis.pdf" target="_blank">full pdf of the thesis</a>.
 
+The core libraries are `elk` (<a href="https://github.com/EleutherAI/elk/" target="_blank">link</a>) for eliciting latent knowledge, `trl` (<a href="https://github.com/huggingface/trl/" target="_blank">link</a>) for RL fine-tuning, and `lm-evaluation-harness` (<a href="https://github.com/EleutherAI/lm-evaluation-harness/" target="_blank">link</a>).
+
 
 # Installation and prerequisites
 
