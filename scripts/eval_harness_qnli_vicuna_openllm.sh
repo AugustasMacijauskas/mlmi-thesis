@@ -102,6 +102,9 @@ echo "Tokenizer: $tokenizer"
 
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_32"
 
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230911_135612_22445/checkpoints/model_step_1_16"
+lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230911_135612_22445/checkpoints/model_step_1_32"
+
 
 # ---------------------------------------- Full LoRA ----------------------------------------
 # 7B-v1.3

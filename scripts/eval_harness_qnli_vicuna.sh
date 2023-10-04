@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -A trlx
-#SBATCH -p g40
+#SBATCH -p g40x
 #SBATCH --nodes=1
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
@@ -56,7 +56,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna-full-lora"
+keyword="vicuna-13B"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -70,8 +70,8 @@ cd $workdir
 # ----------------------------------------
 # model="lmsys/vicuna-7b-v1.3"
 # model="lmsys/vicuna-7b-v1.5"
-model="lmsys/vicuna-13b-v1.3"
-# model="lmsys/vicuna-13b-v1.5"
+# model="lmsys/vicuna-13b-v1.3"
+model="lmsys/vicuna-13b-v1.5"
 # model="lmsys/vicuna-33b-v1.3"
 # model="AugustasM/vicuna-v1.5-rl-qnli-v1"
 echo "Model: $model"
@@ -103,7 +103,10 @@ echo "Tokenizer: $tokenizer"
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
 
 # lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_16"
-lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_32"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_32"
+
+lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230911_135612_22445/checkpoints/model_step_1_16"
+# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230911_135612_22445/checkpoints/model_step_1_32"
 
 
 # ---------------------------------------- Full LoRA ----------------------------------------
