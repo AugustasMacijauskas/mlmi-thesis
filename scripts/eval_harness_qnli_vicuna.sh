@@ -1,13 +1,16 @@
 #!/bin/bash
 
-#SBATCH -A trlx
-#SBATCH -p g40x
+# Some guidelines for good default options are:
+# 1 node, 8 GPUs, 12 CPUs per GPU, 3 hours
+# To get email notifications use the --mail-type option
+
+#SBATCH -A <account>
+#SBATCH -p <partition>
 #SBATCH --nodes=1
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
-#SBATCH -J augustas-thesis
+#SBATCH -J <job-name>
 #SBATCH --time=03:00:00
-#SBATCH --mail-type=NONE
 
 
 # ----------------------------------------
@@ -27,6 +30,8 @@ python --version
 # ----------------------------------------
 # Configuring GPUs
 # ----------------------------------------
+# YOU PROBABLY DO NOT NEED TO EDIT THIS
+
 cuda_devices=$(echo $CUDA_VISIBLE_DEVICES)  # Store the value of CUDA_VISIBLE_DEVICES in a variable
 echo "CUDA_VISIBLE_DEVICES: $cuda_devices"
 
@@ -40,7 +45,7 @@ nvidia-smi --query-gpu=gpu_name --format=csv,noheader | head -n 1
 
 
 # ----------------------------------------
-# Launch the job
+# Launch the job - DO NOT EDIT
 # ----------------------------------------
 workdir="$SLURM_SUBMIT_DIR"
 cd $workdir
@@ -56,7 +61,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna-13B"
+keyword="vicuna-7B"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -68,59 +73,25 @@ cd $workdir
 # ----------------------------------------
 # Model
 # ----------------------------------------
-# model="lmsys/vicuna-7b-v1.3"
-# model="lmsys/vicuna-7b-v1.5"
-# model="lmsys/vicuna-13b-v1.3"
-model="lmsys/vicuna-13b-v1.5"
-# model="lmsys/vicuna-33b-v1.3"
-# model="AugustasM/vicuna-v1.5-rl-qnli-v1"
+model="lmsys/vicuna-7b-v1.5"
 echo "Model: $model"
 
 
 # ----------------------------------------
 # Tokenizer
 # ----------------------------------------
-# tokenizer="lmsys/vicuna-7b-v1.3"
-# tokenizer="lmsys/vicuna-7b-v1.5"
-# tokenizer="lmsys/vicuna-13b-v1.3"
-# tokenizer="lmsys/vicuna-13b-v1.5"
+
+# This same tokenizer as the model is used by default,
+# so only change this if you want to use a different one.
+
+# tokenizer=""
 echo "Tokenizer: $tokenizer"
 
 
 # ----------------------------------------
 # LoRA weight path
 # ----------------------------------------
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_185452_51334/checkpoints/model_step_1_8"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_093735_52310/checkpoints/model_step_1_12"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_142639_51052/checkpoints/model_step_1_6"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_122231_52395/checkpoints/model_step_1_40"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
-
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_32"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_48"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
-
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_32"
-
-lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230911_135612_22445/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230911_135612_22445/checkpoints/model_step_1_32"
-
-
-# ---------------------------------------- Full LoRA ----------------------------------------
-# 7B-v1.3
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230806_59513/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_235545_59747/checkpoints/model_step_1_25"
-
-# 7B-v1.5
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230811_010853_60289/checkpoints/model_step_1_21"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230811_000657_59889/checkpoints/model_step_1_25"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_32"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_48"
-
+lora_path="~/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
 # lora_path=""
 echo "LoRA path: $lora_path"
 
@@ -129,7 +100,7 @@ echo "LoRA path: $lora_path"
 # The task
 # ----------------------------------------
 task="qnli_vicuna"
-# task="qnli_custom_2"
+# task="qnli_custom_2" # The default QNLI template wrapped with lmsys chat prefix and suffix
 echo -e "Task: $task\n"
 
 
@@ -145,10 +116,12 @@ cd ../lm_evaluation_harness_refactored/lm-evaluation-harness
 # ----------------------------------------
 # Launch the commands
 # ----------------------------------------
-    # --log_samples \
-    # --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path,tokenizer=$tokenizer \
-    # --model_args pretrained=$model,parallelize=True,peft=$lora_path \
-    # --model_args pretrained=$model,load_in_8bit=True,parallelize=True,max_memory_per_gpu='39GiB' \
+
+# The batch size of 8 is for a 7B model, decrease if a larger model is used
+
+# Other useful options:
+# --log_samples \
+# --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path,tokenizer=$tokenizer \
 out_file_path="../../$save_path/out-$tasks-$JOBID.out"
 output_path="../../$save_path/outputs_burns/$task.jsonl"
 accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
@@ -157,21 +130,21 @@ accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
     --model hf \
     --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path \
     --tasks $task \
-    --batch_size 4 \
+    --batch_size 8 \
     --output_path $output_path > $out_file_path
 
 
 # ----------------------------------------
 # Print the results
 # ----------------------------------------
-cd /fsx/home-augustas/
+cd ../../
 python mlmi-thesis/src/utils/get_harness_results_burns.py --output_path=$save_path
 
 
 # ----------------------------------------
 # Move the output file
 # ----------------------------------------
-cd /fsx/home-augustas/mlmi-thesis
+cd mlmi-thesis/
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out ../$save_path
 

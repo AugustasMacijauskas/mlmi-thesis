@@ -104,5 +104,16 @@ You can use `src/utils/merge_lora_weights.ipynb` to merge the trained LoRA matri
 
 Finally, you can evaluate the fine-tuned model on the target ask and general NLP tasks. The only target task used in the thesis was the <a href="https://huggingface.co/datasets/glue/viewer/qnli/train" target="_blank">QNLI dataset</a>, so you might have to play around a bit to implement your new custom task. The general NLP tasks are the ones from Open LLM Leaderboard.
 
-To evaluate on the QNLI task, 
+As a prerequisite, create a `logs_eval/` folder adjacent to the cloned repository.
+
+To evaluate on the QNLI task, edit the `scripts/eval_harness_qnli_vicuna.sh` file, then execute:
+```bash
+cd mlmi-thesis/ # Important!
+scripts/launchers/run_eval_harness_qnli_vicuna.sh
+```
+This will run 8 bit inference using the new LoRA weights, or using the original models of an empty string is passed instead of LoRA weights.
+
+To evaluate on the Open LLM Leaderboard datasets, edit the `scripts/eval_harness_qnli_vicuna_openllm.sh` file. It works very similarly (mostly indentically) to the script above.
+
+After the execution finishes, the results will be available in the `logs_eval/` folder.
 

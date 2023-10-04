@@ -1,12 +1,16 @@
 #!/bin/bash
 
+# Some guidelines for good default options are:
+# 1 node, 8 GPUs, 12 CPUs per GPU, 10 hours
+# To get email notifications use the --mail-type option
+
 #SBATCH -A trlx
 #SBATCH -p g40x
 #SBATCH --nodes=1
 #SBATCH --gpus=8
 #SBATCH --cpus-per-gpu=12
 #SBATCH -J augustas-thesis
-#SBATCH --time=24:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mail-type=NONE
 
 
@@ -27,6 +31,8 @@ python --version
 # ----------------------------------------
 # Configuring GPUs
 # ----------------------------------------
+# YOU PROBABLY DO NOT NEED TO EDIT THIS
+
 cuda_devices=$(echo $CUDA_VISIBLE_DEVICES)  # Store the value of CUDA_VISIBLE_DEVICES in a variable
 echo "CUDA_VISIBLE_DEVICES: $cuda_devices"
 
@@ -40,7 +46,7 @@ nvidia-smi --query-gpu=gpu_name --format=csv,noheader | head -n 1
 
 
 # ----------------------------------------
-# Launch the job
+# Launch the job - DO NOT EDIT
 # ----------------------------------------
 workdir="$SLURM_SUBMIT_DIR"
 cd $workdir
@@ -56,7 +62,7 @@ echo "Current directory: `pwd`"
 # Save path
 # ----------------------------------------
 now=$(date "+%Y%m%d_%H%M%S")
-keyword="vicuna-13B-openllm"
+keyword="vicuna-7B-openllm"
 save_path="logs_eval/${keyword}_${now}_${JOBID}"
 
 cd ..
@@ -68,56 +74,25 @@ cd $workdir
 # ----------------------------------------
 # Model
 # ----------------------------------------
-# model="lmsys/vicuna-7b-v1.3"
-# model="lmsys/vicuna-7b-v1.5"
-# model="lmsys/vicuna-13b-v1.3"
-model="lmsys/vicuna-13b-v1.5"
-# model="AugustasM/vicuna_rlhfed_v1"
-# model="AugustasM/vicuna-v1.5-rl-qnli-v1"
+model="lmsys/vicuna-7b-v1.5"
 echo "Model: $model"
 
 
 # ----------------------------------------
 # Tokenizer
 # ----------------------------------------
-# tokenizer="lmsys/vicuna-7b-v1.3"
-# tokenizer="lmsys/vicuna-7b-v1.5"
+
+# This same tokenizer as the model is used by default,
+# so only change this if you want to use a different one.
+
+# tokenizer=""
 echo "Tokenizer: $tokenizer"
 
 
 # ----------------------------------------
 # LoRA weight path
 # ----------------------------------------
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_185452_51334/checkpoints/model_step_1_8"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_093735_52310/checkpoints/model_step_1_12"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230802_142639_51052/checkpoints/model_step_1_6"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_122231_52395/checkpoints/model_step_1_40"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna_UQA_3b_qnli_20230803_144559_52437/checkpoints/model_step_1_32"
-
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_32"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_48"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
-
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230811_011047_60250/checkpoints/model_step_1_32"
-
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230911_135612_22445/checkpoints/model_step_1_16"
-lora_path="/fsx/home-augustas/ppo_logs/vicuna-13B-UQA-3B_20230911_135612_22445/checkpoints/model_step_1_32"
-
-
-# ---------------------------------------- Full LoRA ----------------------------------------
-# 7B-v1.3
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230806_59513/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_235545_59747/checkpoints/model_step_1_25"
-
-# 7B-v1.5
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_16"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230811_000657_59889/checkpoints/model_step_1_25"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_32"
-# lora_path="/fsx/home-augustas/ppo_logs/vicuna-full-LoRA-UQA-3B_20230810_230816_59514/checkpoints/model_step_1_48"
-
-
+lora_path="~/ppo_logs/vicuna-v1.5_UQA_3b_qnli_20230805_144210_53882/checkpoints/model_step_1_64"
 # lora_path=""
 echo "LoRA path: $lora_path"
 
@@ -125,11 +100,8 @@ echo "LoRA path: $lora_path"
 # ----------------------------------------
 # All tasks
 # ----------------------------------------
-# open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc,mmlu"
-# open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc"
-# open_llm_leaderboard_tasks="arc_challenge,hellaswag"
-# open_llm_leaderboard_tasks="mmlu"
-open_llm_leaderboard_tasks="truthfulqa_mc"
+open_llm_leaderboard_tasks="arc_challenge,hellaswag,truthfulqa_mc,mmlu"
+open_llm_leaderboard_tasks="arc_challenge,truthfulqa_mc"
 echo -e "Open LLM leaderboard tasks: $open_llm_leaderboard_tasks\n"
 
 
@@ -184,7 +156,9 @@ for task in $open_llm_leaderboard_tasks; do
     shots=${num_few_shot_examples[$task]}
     echo "Number of few shot examples: $shots"
 
-    # --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path \
+    # Other useful options:
+    # --log_samples \
+    # --model_args pretrained=$model,load_in_8bit=True,peft=$lora_path,tokenizer=$tokenizer \
     out_file_path="../../$save_path/out-$task-$JOBID.out"
     accelerate launch --multi_gpu --num_machines=1 --num_processes=$num_gpus \
         --mixed_precision=no --dynamo_backend=no \
@@ -205,22 +179,24 @@ done
 
 # Check if "truthfulqa_mc" is in the list
 if [[ $open_llm_leaderboard_tasks == *"truthfulqa_mc"* ]]; then
-    cd /fsx/home-augustas/lm-evaluation-harness
+    # Adjust this if only evaluating for the truthfulqa_mc task
+    cd ../../lm-evaluation-harness
+    # cd ~/lm-evaluation-harness
     
     task="truthfulqa_mc"
     tasks="truthfulqa_mc"
     shots="0"
     
-    # --model_args pretrained=$model,peft=$lora_path \
-        # --model_args pretrained=$model,tokenizer=$tokenizer \
+    # --model_args pretrained=$model,tokenizer=$tokenizer \
+    # Reduce batch size for larger models, this is for a 7B model
     out_file_path="../$save_path/out-$task-$JOBID.out"
     python main.py \
         --model hf-causal-experimental \
         --model_args pretrained=$model,peft=$lora_path \
         --tasks $tasks \
         --num_fewshot $shots \
-        --batch_size 16 \
-        --output_path /fsx/home-augustas/$save_path/outputs_open_llm/$tasks-$shots-shot.jsonl \
+        --batch_size 32 \
+        --output_path ../$save_path/outputs_open_llm/$tasks-$shots-shot.jsonl \
         --device cuda > $out_file_path
 fi
 
@@ -231,22 +207,21 @@ fi
 
 # Check if "mmlu" is in the list
 if [[ $open_llm_leaderboard_tasks == *"mmlu"* ]]; then
-    cd /fsx/home-augustas/lm-evaluation-harness
+    # Adjust this if only evaluating for the mmlu task
+    # cd ~/lm-evaluation-harness
     
     task="mmlu"
     tasks="hendrycksTest-*"
     shots="5"
     
     out_file_path="../$save_path/out-$task-$JOBID.out"
-        # --model_args pretrained=$model,tokenizer=$tokenizer,use_accelerate=True,load_in_8bit=True \
-        # --model_args pretrained=$model,peft=$lora_path,use_accelerate=True,load_in_8bit=True \
     python main.py \
         --model hf-causal-experimental \
         --model_args pretrained=$model,peft=$lora_path \
         --tasks $tasks \
         --num_fewshot $shots \
         --batch_size 4 \
-        --output_path /fsx/home-augustas/$save_path/outputs_open_llm/$task-$shots-shot.json \
+        --output_path ../$save_path/outputs_open_llm/$task-$shots-shot.json \
         --device cuda > $out_file_path
 fi
 
@@ -255,14 +230,14 @@ fi
 # Average out the Open LLM results
 # ----------------------------------------
 if [[ -n "$open_llm_leaderboard_tasks" ]]; then
-    cd /fsx/home-augustas/
+    cd ..
     python mlmi-thesis/src/utils/get_harness_results.py --output_path=$save_path
 fi
 
 # ----------------------------------------
 # Move the output file
 # ----------------------------------------
-cd /fsx/home-augustas/mlmi-thesis
+cd mlmi-thesis/
 echo -e "\nMoving file slurm-$JOBID.out to $save_path"
 mv slurm-$JOBID.out ../$save_path
 
