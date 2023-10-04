@@ -3,7 +3,7 @@
 Code for my thesis titled "Eliciting latent knowledge from language reward models" for the MPhil in Machine Learning and Machine Intelligence at the University of Cambridge.
 
 
-## Idea
+# Idea
 
 ![The architecture of the reward model](assets/reward_model.png)
 
@@ -12,14 +12,14 @@ Use methods that _discover latent knowledge_ (DLK), such as <a href="https://arx
 For more details, see the accompanying <a href="https://augustasmacijauskas.github.io/personal-website/posts/thesis/thesis.html" target="_blank">blog post</a> and the <a href="https://augustasmacijauskas.github.io/personal-website/posts/thesis/mlmi-thesis.pdf" target="_blank">full pdf of the thesis</a>.
 
 
-## Installation and prerequisites
+# Installation and prerequisites
 
 1. Clone the repository.
 1. Create a new conda environment in which all the libraries will be downloaded. Note I have dumped the dependencies used in my environment at the end of the project into `environment.yml` file, but it is not always possible to easily install from it by simply using:
     ```bash
     conda env create -f environment.yml
     ```
-    but do try referencing and you may find it helpful.
+    but do try referencing it and you may find it helpful.
 1. Install the `EleutherAI/elk` library. The version from <a href="https://github.com/EleutherAI/elk/tree/a2904e62765fa311b1197505f78fab295e1c87fb" target="_blank">this</a> commit was used (though trying their newest techniques might be worth a try too). Installation instructions can be found in the README of the provided link.
 1. Install the _Language Model Evaluation Harness_ (<a href="https://github.com/EleutherAI/lm-evaluation-harness" target="_blank">EleutherAI/lm-evaluation-harness</a>). To make sure my results match with _Open LLM Leaderboard_ (<a href="https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard" target="_blank">link</a>), <a href="https://github.com/EleutherAI/lm-evaluation-harness/tree/b281b0921b636bc36ad05c0b0b0763bd6dd43463" target="_blank">this</a> version of the harness was used. Installation instructions can be found in the README.
 1. The version of the harness used by the Open LLM Leaderboard does not support distributed inference, so the version of the harness on the _big-refactor_ branch was also used. The version from <a href="https://github.com/EleutherAI/lm-evaluation-harness/tree/2820042d05e91c87852c82293f8973dc841c1a25" target="_blank">this</a> commit was used, but again, checking the current state of the branch might be worth it. Installation instructions can be found in the README.
@@ -35,7 +35,7 @@ git show HEAD
 to see if you are using the right version of the code.
 
 
-## Usage
+# Usage
 
 There are four main steps to run the method on new data:
 1. Split the dataset and prepare it for reward model training and RL fine-tuning.
@@ -46,7 +46,7 @@ There are four main steps to run the method on new data:
 Not all steps are fully automated, so some manual work has to be done, as explained in more detail below.
 
 
-### Dataset preparation
+## Dataset preparation
 
 The first thing that one has to do is prepare the dataset for reward model training and RL fine-tuning. The notebooks under in the [src/dataset_formation/](https://github.com/AugustasMacijauskas/mlmi-thesis/tree/main/src/dataset_formation) folder can be used for that. Make sure you create a `src/dataset_formation/datasets/` folder which is ignored in the remote repository, but will contain the temporary files created in the process before the datasets are pushed to Hugging Face Hub. 
 
@@ -64,7 +64,7 @@ There are many datasets on my <a href="https://huggingface.co/AugustasM" target=
 Note that there are more datasets under `src/dataset_formation/`, but they are the same thing, just specifically shaped to work only for a particular dataset.
 
 
-### Reward model training
+## Reward model training
 
 Reward model training involves getting a few prerequisites right and then editing and running a batch script that trains a probe on a given datasets and saves the trained weights. A few things to notice:
 1. Make sure you have your conda environment with all of the required dependencies activated.
@@ -73,5 +73,13 @@ Reward model training involves getting a few prerequisites right and then editin
 
 Note that I only provide scripts that can be executed on a computing cluster that uses SLURM to obtain the trained probes. The `elk` library also provides ways to do this right from command line, check their documentation if this is something that you need.
 
-With the prerequisites out of the way, open the `scripts/elk.sh` file and edit it to your liking to train a probe that you need. The things that you may want to tweak are:
-1. 
+With the prerequisites out of the way, open the `scripts/elk.sh` file and edit it to your liking to train a probe that you need. Make sure to carefully look through the file to find all of the available options.
+
+Finally, you are ready to execute the batch script and train a probe. Run the following commands:
+```bash
+cd mlmi-thesis/ # Important!
+scripts/launchers/run_elk.sh
+```
+
+
+## RL fine-tuning

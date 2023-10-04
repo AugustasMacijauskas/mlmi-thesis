@@ -167,6 +167,10 @@ src/dataset_formation/datasets/
 src/dataset_inspection/
 src/prototyping/
 src/reward_distributions/
+src/ppo/sandbox
+src/ppo/ppo_training_advanced.py
+src/ppo/ppo_training.py
+src/ppo/push_trained_model_to_hub.ipynb
 scripts/single_gpu_accelerate.sh
 scripts/multi_gpu_accelerate.sh
 scripts/slurm-submit-custom-original
