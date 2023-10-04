@@ -50,6 +50,7 @@ Most commonly, the workflow is as follows:
 1. Use the `form_train_ppo_datasets.ipynb` notebook to first split the training data from a dataset into `train` and `ppo` splits. The former will be used for reward model training, and the latter will be used for RL fine-tuning (it is called _PPO_ in the PPO algorithm is used for fine-tuning). The notebook requires some manual work to be done, some cells are commented out when they should not be, but hopefully staring at the code enough will make it clear what is going on, and make sure to refer to my thesis blog post and the pdf (linked above). Roughly speaking:
     - Split the data.
     - Choose a template(s) to be applied for the `train` split and apply it.
+1. Use the `format_ppo_training_dataset.ipynb` to apply a chosen template on the `ppo` split.
 1. Use the `form_val_dataset.ipynb` to form the `val` split. Choosing and applying a template is required this time as well.
 1. Use the `push_dataset_to_hub.ipynb` notebook to combine the formed temporary files and push them to Hugging Face Hub.
 
