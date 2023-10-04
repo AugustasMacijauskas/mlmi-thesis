@@ -23,7 +23,7 @@ class ScriptArguments:
     remove_unused_columns: Optional[bool] = field(default=True, metadata={"help": "whether to remove unused columns"})
     num_examples: Optional[int] = field(default=8192, metadata={"help": "the number of training examples"})
 
-    template_path: Optional[str] = field(default="AugustasM/burns-datasets-VINC", metadata={ "help": "the template path" })
+    template_path: Optional[str] = field(default="AugustasM/truthfulness-prompts", metadata={ "help": "the template path" })
     
     log_with: Optional[str] = field(default=None, metadata={"help": "use 'wandb'/'tensorboard'"})
     logging_dir: Optional[str] = field(default=None, metadata={"help": "the logging directory used if 'log_with' is set to 'ensorboard'"})

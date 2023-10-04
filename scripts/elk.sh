@@ -36,6 +36,7 @@ python --version
 cuda_devices=$(echo $CUDA_VISIBLE_DEVICES)  # Store the value of CUDA_VISIBLE_DEVICES in a variable
 echo "CUDA_VISIBLE_DEVICES: $cuda_devices"
 
+# Use awk to get the number of available devices
 num_gpus=$(echo $cuda_devices | awk -F, '{print NF}')
 echo "num_gpus: $num_gpus"
 
@@ -84,8 +85,8 @@ echo "Dataset: $dataset"
 # ----------------------------------------
 # Template
 # ----------------------------------------
-template_path="AugustasM/burns-datasets-VINC"
-# template_path="AugustasM/burns-datasets-VINC/all"
+template_path="AugustasM/truthfulness-prompts"
+# template_path="AugustasM/truthfulness-prompts/all"
 echo -e "Template path: $template_path\n"
 
 

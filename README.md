@@ -20,9 +20,11 @@ For more details, see the accompanying <a href="https://augustasmacijauskas.gith
     conda env create -f environment.yml
     ```
     but do try referencing it and you may find it helpful.
-1. Install the `EleutherAI/elk` library. The version from <a href="https://github.com/EleutherAI/elk/tree/a2904e62765fa311b1197505f78fab295e1c87fb" target="_blank">this</a> commit was used (though trying their newest techniques might be worth a try too). Installation instructions can be found in the README of the provided link.
-1. Install the _Language Model Evaluation Harness_ (<a href="https://github.com/EleutherAI/lm-evaluation-harness" target="_blank">EleutherAI/lm-evaluation-harness</a>). To make sure my results match with _Open LLM Leaderboard_ (<a href="https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard" target="_blank">link</a>), <a href="https://github.com/EleutherAI/lm-evaluation-harness/tree/b281b0921b636bc36ad05c0b0b0763bd6dd43463" target="_blank">this</a> version of the harness was used. Installation instructions can be found in the README.
-1. The version of the harness used by the Open LLM Leaderboard does not support distributed inference, so the version of the harness on the _big-refactor_ branch was also used. The version from <a href="https://github.com/EleutherAI/lm-evaluation-harness/tree/2820042d05e91c87852c82293f8973dc841c1a25" target="_blank">this</a> commit was used, but again, checking the current state of the branch might be worth it. Installation instructions can be found in the README.
+1. Install the `EleutherAI/elk` library. The version from <a href="https://github.com/EleutherAI/elk/tree/a2904e62765fa311b1197505f78fab295e1c87fb" target="_blank">this</a> commit was used (though trying their newest techniques might be worth a try too). Installation instructions can be found in the README of the provided link. Install to a folder adjacent to directory containing the cloned repository.
+    - Once installed copy the `custom-prompts/AugustasM/` folder into `elk/elk/promptsource/templates/`, i.e. you want a folder `elk/elk/promptsource/templates/AugustasM` to exist.
+1. Install the _Language Model Evaluation Harness_ (<a href="https://github.com/EleutherAI/lm-evaluation-harness" target="_blank">EleutherAI/lm-evaluation-harness</a>). To make sure my results match with _Open LLM Leaderboard_ (<a href="https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard" target="_blank">link</a>), <a href="https://github.com/EleutherAI/lm-evaluation-harness/tree/b281b0921b636bc36ad05c0b0b0763bd6dd43463" target="_blank">this</a> version of the harness was used. Installation instructions can be found in the README. Install to a folder adjacent to directory containing the cloned repository.
+1. The version of the harness used by the Open LLM Leaderboard does not support distributed inference, so the version of the harness on the _big-refactor_ branch was also used. The version from <a href="https://github.com/EleutherAI/lm-evaluation-harness/tree/2820042d05e91c87852c82293f8973dc841c1a25" target="_blank">this</a> commit was used, but again, checking the current state of the branch might be worth it. Installation instructions can be found in the README. Install to a folder adjacent to directory containing the cloned repository. To avoid clash with the original harness repository cloned above, you can wrap this version into another folder, e.g. I installed into `~/lm_evalution_harness_refactored/lm-evalution-harness`.
+    - Once installed copy the files in `custom-prompts/qnli/*` into `~/<wrap-directory>/lm-evalution-harness/tasks/glue/qnli/`, e.g. in my case I copied to files to `~/lm_evalution_harness_refactored/lm-evalution-harness/tasks/glue/qnli/` folder. Make sure you copy the files and not the folder, i.e. you want to extend the contents of the existing `glue/qnli/` folder.
 
 The following <a href="https://www.git-tower.com/learn/git/faq/git-checkout-commits" target="_blank">guide</a> might be useful to checkout to a desired commit, but the main command you want to use is this:
 ```bash
@@ -41,7 +43,7 @@ There are four main steps to run the method on new data:
 1. Split the dataset and prepare it for reward model training and RL fine-tuning.
 1. Train a reward model.
 1. Performing RL fine-tuning on some pre-trained LLM.
-1. Evaluate the pre-trained LLM on both target and general NLP tasks.
+1. Evaluate the fine-tuned LLM on both target and general NLP tasks.
 
 Not all steps are fully automated, so some manual work has to be done, as explained in more detail below.
 
@@ -68,8 +70,8 @@ Note that there are more datasets under `src/dataset_formation/`, but they are t
 
 Reward model training involves getting a few prerequisites right and then editing and running a batch script that trains a probe on a given datasets and saves the trained weights. A few things to notice:
 1. Make sure you have your conda environment with all of the required dependencies activated.
-1. Create a folder called `logs_elk` next to the whatever you called the folder for the cloned repository (should be called `mlmi-thesis` by default). The logs about probe training will be saved here.
-1. Create a folder called `elk-probes` which will contain all of the trained probes that we will use to build reward models.
+1. Create a folder called `logs_elk/` adjacent to the whatever you called the folder for the cloned repository (should be called `mlmi-thesis` by default). The logs about probe training will be saved here.
+1. Create a folder called `elk-probes/` which will contain all of the trained probes that we will use to build reward models.
 
 Note that I only provide scripts that can be executed on a computing cluster that uses SLURM to obtain the trained probes. The `elk` library also provides ways to do this right from command line, check their documentation if this is something that you need.
 
@@ -83,3 +85,24 @@ scripts/launchers/run_elk.sh
 
 
 ## RL fine-tuning
+
+Before running the code, create a `ppo_logs/` folder adjacent to the cloned repository.
+
+Edit the `scripts/ppo_vicuna.sh` file to your liking. The script was tested with the distributed data parallel training and using 8 bit quantization. However, other configurations may work as well. Once you are finished with editing the script, execute the following:
+```bash
+cd mlmi-thesis/ # Important!
+scripts/launchers/run_ppo_vicuna.sh
+```
+Note that this will use `wandb` logging, you can edit the project name in the `src/ppo/configs.py` file in the `get_ppo_config()` function under the `tracker_project_name` attribute.
+
+If you want to see the code itself, it is contained in the `src/ppo/` folder. For example, you might want to do this to change the quantization type (currently, 8 bit quantization is hard-coded).
+
+You can use `src/utils/merge_lora_weights.ipynb` to merge the trained LoRA matrices into the model and push to hub if needed.
+
+
+## Evaluate the fine-tuned LLM
+
+Finally, you can evaluate the fine-tuned model on the target ask and general NLP tasks. The only target task used in the thesis was the <a href="https://huggingface.co/datasets/glue/viewer/qnli/train" target="_blank">QNLI dataset</a>, so you might have to play around a bit to implement your new custom task. The general NLP tasks are the ones from Open LLM Leaderboard.
+
+To evaluate on the QNLI task, 
+

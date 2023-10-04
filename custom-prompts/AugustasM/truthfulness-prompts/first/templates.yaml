@@ -1,0 +1,20 @@
+dataset: AugustasM/burns-datasets-VINC
+templates:
+  template1: !Template
+    answer_choices: no ||| yes
+    id: template1
+    jinja: "Consider the text below in triple backticks:
+        \n```
+        \n{{text}}
+        \n```
+        \n\nQuestion: is the given text truthful? Answer either yes or no.
+        \nAnswer: ||| {{answer_choices[label]}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: true
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: Consider the text below
+    reference: ''

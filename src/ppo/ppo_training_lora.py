@@ -38,20 +38,17 @@ def main():
 
     # Tokenizer
     tokenizer = get_tokenizer(script_args.tokenizer_name)
-    # tokenizer.padding_side = "right"
-    # tokenizer.pad_token = tokenizer.unk_token
 
     # Dataset for PPO training
     temporary_accelerator.print(f"{script_args.num_examples=}")
     train_dataset = get_dataset_qnli(
         script_args.dataset_name, tokenizer, margin=8,
         seed=config.seed,
-        # num_examples=81920,
         num_examples=script_args.num_examples,
     )
 
     # Dataset templates
-    dataset_template_path = "AugustasM/burns-datasets-VINC"
+    dataset_template_path = script_args.template_path
     template = get_template(dataset_template_path)
 
     # set seed before initializing value head for deterministic eval
@@ -122,7 +119,6 @@ def main():
     generation_kwargs = {
         "top_k": 0,
         "top_p": 1.0,
-        # "do_sample": False,
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": 100_000, # why is this value like this?

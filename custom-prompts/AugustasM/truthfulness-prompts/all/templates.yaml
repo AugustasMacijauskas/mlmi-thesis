@@ -1,0 +1,85 @@
+dataset: AugustasM/burns-datasets-VINC
+templates:
+  template1: !Template
+    answer_choices: no ||| yes
+    id: template1
+    jinja: "Consider the text below in triple backticks:
+        \n```
+        \n{{text}}
+        \n```
+        \n\nQuestion: is the given text truthful? Answer either yes or no.
+        \nAnswer: ||| {{answer_choices[label]}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: true
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: Consider the text below
+    reference: ''
+  template2: !Template
+    answer_choices: no ||| yes
+    id: template2
+    jinja: "Question: is the text given below in triple backticks truthful? Answer either yes or no.
+        \n```
+        \n{{text}}
+        \n```
+        \nAnswer: ||| {{answer_choices[label]}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: true
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: Is the given text truthful
+    reference: ''
+  template3: !Template
+    answer_choices: deceptive ||| truthful
+    id: template3
+    jinja: "
+        ```
+        \n{{text}}
+        \n```
+        \n\nQuestion: is the text given above in triple backticks truthful? Answer either truthful or deceptive.
+        \nAnswer: ||| {{answer_choices[label]}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: true
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: Text first
+    reference: ''
+  template4: !Template
+    answer_choices: No ||| Yes
+    id: template4
+    jinja: "
+        {{text}}
+        \nThe text given above is an example of text that is truthful. ||| {{answer_choices[label]}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: false
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: No question no choices
+    reference: ''
+  template5: !Template
+    answer_choices: deceptive ||| truthful
+    id: template5
+    jinja: "
+        {{text}}
+        \nOut of deceptive or truthful, the text given above is ||| {{answer_choices[label]}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: true
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: No question with choices
+    reference: ''

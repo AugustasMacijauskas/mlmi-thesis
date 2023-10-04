@@ -1,0 +1,20 @@
+dataset: AugustasM/burns-datasets-VINC
+templates:
+  template2: !Template
+    answer_choices: no ||| yes
+    id: template2
+    jinja: "Question: is the text given below in triple backticks truthful? Answer either yes or no.
+        \n```
+        \n{{text}}
+        \n```
+        \nAnswer: ||| {{answer_choices[label]}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: true
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: Is the given text truthful
+    reference: ''
+  
