@@ -9,6 +9,90 @@ Code for my thesis titled "Eliciting latent knowledge from language reward model
 
 Use methods that _discover latent knowledge_ (DLK), such as <a href="https://arxiv.org/abs/2212.03827" target="_blank">CCS</a>, to build reward models that promote truthfulness. Utilize these reward models to execute _reinforcement learning_ (RL) fine-tuning to improve the "truthfulness" of LLMs.
 
+The core code bit from the project is the fine-tuning training loop:
+```python
+import torch
+import string
+
+
+CHARACTERS_TO_FILTER = string.punctuation + " \n"
+
+
+def is_answer_yes_no(answer):
+    return answer in ["Yes", "No"]
+
+
+def postprocess_response(response):
+    while response and response[-1] in CHARACTERS_TO_FILTER:
+        response = response[:-1]
+    return response
+
+
+def train(
+    ppo_trainer,
+    tokenizer,
+    generation_kwargs,
+    get_rewards,
+    script_args, config,
+):
+    n_epochs = config.steps // len(ppo_trainer.dataloader)
+
+    for epoch in range(1, n_epochs + 1):
+        loop = tqdm(
+            enumerate(ppo_trainer.dataloader, 1),
+            total=len(ppo_trainer.dataloader), leave=False
+        )
+        for batch_idx, batch in loop:
+            # Get the input tensors
+            question_tensors = batch["input_ids"]
+
+            # Get the generations
+            response_tensors = ppo_trainer.generate(
+                question_tensors,
+                return_prompt=False,
+                batch_size=script_args.generator_batch_size,
+                **generation_kwargs,
+            )
+            responses = tokenizer.batch_decode(
+                response_tensors, skip_special_tokens=True,
+                spaces_between_special_tokens=False
+            )
+
+            # Postprocess the responses
+            if script_args.postprocess_responses:
+                responses = [postprocess_response(x) for x in responses]
+            batch["response"] = responses
+
+            # Compute the rewards (scores)
+            texts = [q + " " + r for q, r in zip(batch["query"], batch["response"])]
+            rewards = get_rewards(texts)
+
+            # Replace reward for undesired answers to -1
+            mask = [not is_answer_yes_no(x) for x in batch["response"]]
+            mask = torch.tensor(mask, dtype=torch.bool) # cast to tensor
+            rewards[mask] = -1
+
+            # Make the rewards a list of tensors
+            rewards = [x for x in rewards]
+
+            # Run PPO step
+            stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
+            ppo_trainer.log_stats(stats, batch, rewards)
+```
+
+Note that the `generation_kwargs` look something like this:
+```python
+generation_kwargs = {
+    "top_k": 0,
+    "top_p": 1.0,
+    "do_sample": True,
+    "pad_token_id": tokenizer.pad_token_id,
+    "eos_token_id": 100_000,
+    "pad_to_multiple_of": 8,
+    "max_new_tokens": 2,
+}
+```
+
 For more details, see the accompanying <a href="https://augustasmacijauskas.github.io/personal-website/posts/thesis/thesis.html" target="_blank">blog post</a> and the <a href="https://augustasmacijauskas.github.io/personal-website/posts/thesis/mlmi-thesis.pdf" target="_blank">full pdf of the thesis</a>.
 
 The core libraries are `elk` (<a href="https://github.com/EleutherAI/elk/" target="_blank">link</a>) for eliciting latent knowledge, `trl` (<a href="https://github.com/huggingface/trl/" target="_blank">link</a>) for RL fine-tuning, and `lm-evaluation-harness` (<a href="https://github.com/EleutherAI/lm-evaluation-harness/" target="_blank">link</a>).
